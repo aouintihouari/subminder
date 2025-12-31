@@ -1,3 +1,9 @@
+process.on("uncaughtException", (err: Error) => {
+  console.log("UNCAUGHT EXCEPTION! 💥 Shutting down...");
+  console.log(err.name, err.message);
+  process.exit(1);
+});
+
 import "dotenv/config";
 import app from "./app";
 
