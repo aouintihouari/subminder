@@ -1,5 +1,8 @@
-import { SignupForm } from "@/features/auth/components/SignupForm";
+// src/App.tsx
+import { AuthPage } from "@/features/auth/pages/AuthPage";
 
-export default function App() {
-  return <SignupForm />;
+function App() {
+  return <AuthPage />;
 }
+
+export default App;
