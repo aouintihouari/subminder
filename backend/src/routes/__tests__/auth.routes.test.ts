@@ -99,7 +99,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     expect(response.status).toBe(500);
     expect(response.body.status).toBe("error");
-    expect(response.body.message).toBe("Database went boom 💥");
+    expect(response.body.message).toBe("Something went wrong!");
   });
 });
 

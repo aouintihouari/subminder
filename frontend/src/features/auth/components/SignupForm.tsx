@@ -77,10 +77,9 @@ export function SignupForm() {
           <div className="animate-in zoom-in flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 shadow-sm duration-300">
             <CheckCircle2 className="h-8 w-8 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Account Created!</h2>
-          <p className="text-muted-foreground text-sm">
-            Welcome to SubMinder. You can now log in to your dashboard.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Please verify your email
+          </h2>
           <Button
             className="mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700"
             onClick={() => window.location.reload()}
