@@ -4,6 +4,12 @@ import { PrismaClient } from "@prisma/client";
 
 jest.mock("../../lib/prisma");
 
+jest.mock("../../services/email.service", () => ({
+  emailService: {
+    sendVerificationEmail: jest.fn(),
+  },
+}));
+
 import app from "../../app";
 import { prisma } from "../../lib/prisma";
 
@@ -94,5 +100,56 @@ describe("POST /api/v1/auth/signup", () => {
     expect(response.status).toBe(500);
     expect(response.body.status).toBe("error");
     expect(response.body.message).toBe("Database went boom 💥");
+  });
+});
+
+describe("POST /api/v1/auth/verify-email", () => {
+  it("should verify email successfully with valid token", async () => {
+    prismaMock.user.findFirst.mockResolvedValue({
+      id: 1,
+      email: "test@example.com",
+      verificationToken: "valid_token",
+      verificationTokenExpiresAt: new Date(Date.now() + 3600000),
+    } as any);
+
+    prismaMock.user.update.mockResolvedValue({
+      id: 1,
+      isVerified: true,
+      verificationToken: null,
+    } as any);
+
+    const response = await request(app)
+      .post("/api/v1/auth/verify-email")
+      .send({ token: "valid_token" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toContain("Email verified successfully");
+
+    expect(prismaMock.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({ isVerified: true }),
+      })
+    );
+  });
+
+  it("should fail if token is invalid or expired", async () => {
+    prismaMock.user.findFirst.mockResolvedValue(null);
+
+    const response = await request(app)
+      .post("/api/v1/auth/verify-email")
+      .send({ token: "invalid_token" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Invalid or expired verification token");
+  });
+
+  it("should fail if token is missing from body", async () => {
+    const response = await request(app)
+      .post("/api/v1/auth/verify-email")
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBeDefined();
   });
 });
