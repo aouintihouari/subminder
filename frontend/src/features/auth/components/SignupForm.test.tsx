@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { SignupForm } from "./SignupForm";
 import { authService } from "../services/auth.service";
 
@@ -108,7 +109,8 @@ describe("SignupForm Component", () => {
           passwordConfirm: "password123",
         }),
       );
-      expect(screen.getByText("Account Created!")).toBeInTheDocument();
+
+      expect(screen.getByText("Please verify your email")).toBeInTheDocument();
     });
   });
 });

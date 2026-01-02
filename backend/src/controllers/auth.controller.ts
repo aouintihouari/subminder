@@ -1,11 +1,18 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 import { prisma } from "../lib/prisma";
-import { signupSchema } from "../schemas/authSchema";
+import { signupSchema, loginSchema } from "../schemas/authSchema";
 import { AppError } from "../utils/AppError";
 import { emailService } from "../services/email.service";
+
+const signToken = (id: number) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET as string, {
+    expiresIn: (process.env.JWT_EXPIRES_IN || "90d") as any,
+  });
+};
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   const validated = signupSchema.parse({ body: req.body });
@@ -72,10 +79,36 @@ export const verifyEmail = async (
     },
   });
 
-  res
-    .status(200)
-    .json({
-      status: "success",
-      message: "Email verified successfully! You can now log in.",
-    });
+  res.status(200).json({
+    status: "success",
+    message: "Email verified successfully! You can now log in.",
+  });
+};
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+  const validated = loginSchema.parse({ body: req.body });
+  const { email, password } = validated.body;
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user || !(await bcrypt.compare(password, user.password)))
+    throw new AppError("Invalid email or password", 401);
+
+  if (!user.isVerified)
+    throw new AppError("Please verify your email to log in", 403);
+
+  const token = signToken(user.id);
+
+  res.status(200).json({
+    status: "success",
+    token,
+    data: {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    },
+  });
 };

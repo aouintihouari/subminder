@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
+import { AxiosError } from "axios";
+
 import { VerifyEmailPage } from "./VerifyEmailPage";
 import { authService } from "../services/auth.service";
-import { AxiosError } from "axios";
 
 vi.mock("../services/auth.service", () => ({
   authService: {
@@ -53,12 +54,9 @@ describe("VerifyEmailPage", () => {
     expect(authService.verifyEmail).toHaveBeenCalledWith("valid-token-123");
   });
 
-  // --- LE TEST QUI ÉCHOULAIT EST CORRIGÉ ICI ---
   it("shows error state when API call fails", async () => {
-    // 1. On crée une vraie erreur Axios
     const error = new AxiosError();
 
-    // 2. On hydrate sa réponse manuellement
     error.response = {
       data: { message: "Invalid or expired verification token" },
       status: 400,
@@ -67,14 +65,12 @@ describe("VerifyEmailPage", () => {
       config: {} as any,
     };
 
-    // 3. On rejette cette vraie erreur
     (authService.verifyEmail as Mock).mockRejectedValue(error);
 
     renderWithRouter("invalid-token");
 
     await waitFor(() => {
       expect(screen.getByText(/Verification Failed/i)).toBeInTheDocument();
-      // Maintenant, ça va passer car 'instanceof AxiosError' sera vrai
       expect(
         screen.getByText(/Invalid or expired verification token/i),
       ).toBeInTheDocument();
