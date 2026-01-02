@@ -11,8 +11,6 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-// On garde axios juste pour le type d'erreur, mais on n'appelle plus axios.post directement
-import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +25,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 
 import { signupSchema, type SignupFormValues } from "../schemas/signup.schema";
-// IMPORT IMPORTANT : Le service d'authentification
-import { authService } from "../api/auth.service";
+import { authService } from "../services/auth.service";
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);

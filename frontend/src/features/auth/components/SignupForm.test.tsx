@@ -2,10 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SignupForm } from "./SignupForm";
-import { authService } from "../api/auth.service";
+import { authService } from "../services/auth.service";
 
-// Mock du service
-vi.mock("../api/auth.service", () => ({
+vi.mock("../services/auth.service", () => ({
   authService: {
     signup: vi.fn(),
   },
@@ -39,30 +38,25 @@ describe("SignupForm Component", () => {
     });
   });
 
-  // --- NOUVEAU TEST : Mots de passe différents ---
   it("shows error when passwords do not match", async () => {
     const user = userEvent.setup();
     render(<SignupForm />);
 
-    // On remplit des mots de passe différents
     const passwordInputs = screen.getAllByPlaceholderText("••••••••");
     await user.type(passwordInputs[0], "password123");
-    await user.type(passwordInputs[1], "differentPassword"); // Différent
+    await user.type(passwordInputs[1], "differentPassword");
 
     await user.click(screen.getByRole("button", { name: /Create Account/i }));
 
     await waitFor(() => {
-      // Le message doit venir de Zod (défini dans ton schema)
       expect(screen.getByText(/Passwords do not match/i)).toBeInTheDocument();
     });
   });
 
-  // --- NOUVEAU TEST : Erreur API (Ex: Email déjà pris) ---
   it("handles server-side errors (e.g., email already exists)", async () => {
     const user = userEvent.setup();
     render(<SignupForm />);
 
-    // On simule une erreur 409 (Conflict) venant du backend
     const mockError = {
       response: {
         data: { message: "This email is already in use." },
@@ -70,7 +64,6 @@ describe("SignupForm Component", () => {
     };
     (authService.signup as any).mockRejectedValue(mockError);
 
-    // Remplissage valide
     await user.type(screen.getByPlaceholderText("John Doe"), "Houari");
     await user.type(
       screen.getByPlaceholderText("name@example.com"),
@@ -83,7 +76,6 @@ describe("SignupForm Component", () => {
     await user.click(screen.getByRole("button", { name: /Create Account/i }));
 
     await waitFor(() => {
-      // On vérifie que le message d'erreur du backend s'affiche en rouge
       expect(
         screen.getByText("This email is already in use."),
       ).toBeInTheDocument();
