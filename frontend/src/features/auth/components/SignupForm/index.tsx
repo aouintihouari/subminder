@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import {
   Loader2,
   Mail,
@@ -24,10 +26,14 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { signupSchema, type SignupFormValues } from "../schemas/signup.schema";
-import { authService } from "../services/auth.service";
+import {
+  signupSchema,
+  type SignupFormValues,
+} from "../../schemas/signup.schema";
+import { authService } from "../../services/auth.service";
 
 export function SignupForm() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -52,24 +58,18 @@ export function SignupForm() {
     try {
       await authService.signup(data);
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error) {
       let message = "Something went wrong. Please try again.";
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
+      if (error instanceof AxiosError && error.response?.data?.message)
         message = error.response.data.message;
-      } else if (error.message) {
-        message = error.message;
-      }
+      else if (error instanceof Error) message = error.message;
+
       setServerError(message);
     } finally {
       setIsLoading(false);
     }
   }
 
-  // --- SUCCESS STATE ---
   if (success) {
     return (
       <Card className="animate-in fade-in zoom-in-95 w-full border-x-0 border-t-4 border-b-0 border-t-indigo-600 shadow-none duration-500">
@@ -82,7 +82,7 @@ export function SignupForm() {
           </h2>
           <Button
             className="mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700"
-            onClick={() => window.location.reload()}
+            onClick={() => navigate("/auth?tab=login")}
           >
             Go to Login <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -91,14 +91,12 @@ export function SignupForm() {
     );
   }
 
-  // --- FORM ---
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="animate-in fade-in slide-in-from-right-4 space-y-4 duration-300"
       >
-        {/* FULL NAME */}
         <FormField
           control={form.control}
           name="name"
@@ -130,7 +128,6 @@ export function SignupForm() {
           )}
         />
 
-        {/* EMAIL */}
         <FormField
           control={form.control}
           name="email"
@@ -139,7 +136,7 @@ export function SignupForm() {
               <FormLabel
                 className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
               >
-                Professional Email
+                Email
               </FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
@@ -163,7 +160,6 @@ export function SignupForm() {
           )}
         />
 
-        {/* PASSWORD */}
         <FormField
           control={form.control}
           name="password"
@@ -207,7 +203,6 @@ export function SignupForm() {
           )}
         />
 
-        {/* CONFIRM PASSWORD */}
         <FormField
           control={form.control}
           name="passwordConfirm"
