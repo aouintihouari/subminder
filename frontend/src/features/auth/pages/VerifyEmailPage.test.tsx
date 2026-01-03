@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
-import { AxiosError } from "axios";
+import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { VerifyEmailPage } from "./VerifyEmailPage";
 import { authService } from "../services/auth.service";
@@ -62,7 +62,7 @@ describe("VerifyEmailPage", () => {
       status: 400,
       statusText: "Bad Request",
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     };
 
     (authService.verifyEmail as Mock).mockRejectedValue(error);

@@ -1,26 +1,48 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { BrowserRouter } from "react-router"; // 👈 Import du Router
 
-import { SignupForm } from "./SignupForm";
-import { authService } from "../services/auth.service";
+// On importe depuis "." car le fichier s'appelle index.tsx dans le même dossier
+import { SignupForm } from ".";
+import { authService } from "../../services/auth.service";
 
-vi.mock("../services/auth.service", () => ({
-  authService: {
-    signup: vi.fn(),
-  },
-}));
+// 1. MOCK DE REACT-ROUTER (useNavigate)
+const mockNavigate = vi.fn();
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual("react-router");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 describe("SignupForm Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // 2. HELPER POUR RENDRE AVEC LE ROUTER
+  const renderWithRouter = () => {
+    return render(
+      <BrowserRouter>
+        <SignupForm />
+      </BrowserRouter>,
+    );
+  };
+
   it("renders all form fields correctly", () => {
-    render(<SignupForm />);
+    renderWithRouter(); // 👈 Utilisation du helper
     expect(screen.getByPlaceholderText("John Doe")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("name@example.com")).toBeInTheDocument();
-    expect(screen.getAllByPlaceholderText("••••••••")).toHaveLength(2);
+    expect(
+      screen.getByPlaceholderText(/name@example.com/i),
+    ).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText(/••••••••/i)).toHaveLength(2);
     expect(
       screen.getByRole("button", { name: /Create Account/i }),
     ).toBeInTheDocument();
@@ -28,7 +50,7 @@ describe("SignupForm Component", () => {
 
   it("shows validation errors for invalid inputs (Empty Fields)", async () => {
     const user = userEvent.setup();
-    render(<SignupForm />);
+    renderWithRouter();
 
     await user.click(screen.getByRole("button", { name: /Create Account/i }));
 
@@ -41,9 +63,9 @@ describe("SignupForm Component", () => {
 
   it("shows error when passwords do not match", async () => {
     const user = userEvent.setup();
-    render(<SignupForm />);
+    renderWithRouter();
 
-    const passwordInputs = screen.getAllByPlaceholderText("••••••••");
+    const passwordInputs = screen.getAllByPlaceholderText(/••••••••/i);
     await user.type(passwordInputs[0], "password123");
     await user.type(passwordInputs[1], "differentPassword");
 
@@ -56,21 +78,26 @@ describe("SignupForm Component", () => {
 
   it("handles server-side errors (e.g., email already exists)", async () => {
     const user = userEvent.setup();
-    render(<SignupForm />);
 
-    const mockError = {
-      response: {
-        data: { message: "This email is already in use." },
-      },
+    const error = new AxiosError();
+    error.response = {
+      data: { message: "This email is already in use." },
+      status: 409,
+      statusText: "Conflict",
+      headers: {},
+      config: {} as InternalAxiosRequestConfig,
     };
-    (authService.signup as any).mockRejectedValue(mockError);
+
+    const signupSpy = vi.spyOn(authService, "signup").mockRejectedValue(error);
+
+    renderWithRouter();
 
     await user.type(screen.getByPlaceholderText("John Doe"), "Houari");
     await user.type(
-      screen.getByPlaceholderText("name@example.com"),
+      screen.getByPlaceholderText(/name@example.com/i),
       "existing@example.com",
     );
-    const passwordInputs = screen.getAllByPlaceholderText("••••••••");
+    const passwordInputs = screen.getAllByPlaceholderText(/••••••••/i);
     await user.type(passwordInputs[0], "password123");
     await user.type(passwordInputs[1], "password123");
 
@@ -81,28 +108,34 @@ describe("SignupForm Component", () => {
         screen.getByText("This email is already in use."),
       ).toBeInTheDocument();
     });
+
+    expect(signupSpy).toHaveBeenCalled();
   });
 
   it("submits valid data to API and shows success message", async () => {
     const user = userEvent.setup();
-    render(<SignupForm />);
 
-    (authService.signup as any).mockResolvedValue({ status: "success" });
+    const signupSpy = vi.spyOn(authService, "signup").mockResolvedValue({
+      status: "success",
+      message: "User registered",
+    });
+
+    renderWithRouter();
 
     await user.type(screen.getByPlaceholderText("John Doe"), "Houari");
     await user.type(
-      screen.getByPlaceholderText("name@example.com"),
+      screen.getByPlaceholderText(/name@example.com/i),
       "test@example.com",
     );
 
-    const passwordInputs = screen.getAllByPlaceholderText("••••••••");
+    const passwordInputs = screen.getAllByPlaceholderText(/••••••••/i);
     await user.type(passwordInputs[0], "password123");
     await user.type(passwordInputs[1], "password123");
 
     await user.click(screen.getByRole("button", { name: /Create Account/i }));
 
     await waitFor(() => {
-      expect(authService.signup).toHaveBeenCalledWith(
+      expect(signupSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           email: "test@example.com",
           password: "password123",
@@ -110,7 +143,7 @@ describe("SignupForm Component", () => {
         }),
       );
 
-      expect(screen.getByText("Please verify your email")).toBeInTheDocument();
+      expect(screen.getByText(/Please verify your email/i)).toBeInTheDocument();
     });
   });
 });

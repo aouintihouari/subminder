@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router";
-import { AxiosError } from "axios";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
+import { AxiosError } from "axios";
 
 import { authService } from "../services/auth.service";
 
