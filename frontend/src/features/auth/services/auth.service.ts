@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import { type SignupFormValues } from "../schemas/signup.schema";
 import { type LoginFormValues } from "../schemas/login.schema";
-import { type AuthResponse } from "../types/types";
+import { type AuthResponse, type User } from "../types/types";
 
 export const authService = {
   signup: async (data: SignupFormValues): Promise<AuthResponse> => {
@@ -18,12 +18,17 @@ export const authService = {
 
   login: async (data: LoginFormValues): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>("/auth/login", data);
-    if (response.data.token) localStorage.setItem("token", response.data.token);
     return response.data;
+  },
+
+  getMe: async (): Promise<{ user: User }> => {
+    const response = await apiClient.get<AuthResponse>("/auth/me");
+    if (!response.data.data?.user) throw new Error("User not found");
+    return { user: response.data.data.user };
   },
 
   logout: () => {
     localStorage.removeItem("token");
-    window.location.href = "/auth";
+    localStorage.removeItem("user");
   },
 };
