@@ -15,6 +15,16 @@ vi.mock("react-router", async () => {
   };
 });
 
+const mockLoginContext = vi.fn();
+vi.mock("@/hooks/authContext", () => ({
+  useAuth: () => ({
+    login: mockLoginContext,
+    isAuthenticated: false,
+    isLoading: false,
+    user: null,
+  }),
+}));
+
 describe("LoginForm Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,13 +95,16 @@ describe("LoginForm Component", () => {
     expect(loginSpy).toHaveBeenCalled();
   });
 
-  it("calls login service and redirects on success", async () => {
+  it("calls login service, updates context and redirects on success", async () => {
     const user = userEvent.setup();
 
     const loginSpy = vi.spyOn(authService, "login").mockResolvedValue({
       status: "success",
       message: "Login successful",
       token: "fake-jwt-token",
+      data: {
+        user: { id: 1, email: "valid@test.com", name: "Tester", role: "USER" },
+      },
     });
 
     renderWithRouter();
@@ -109,6 +122,12 @@ describe("LoginForm Component", () => {
         email: "valid@test.com",
         password: "password123",
       });
+
+      expect(mockLoginContext).toHaveBeenCalledWith(
+        "fake-jwt-token",
+        expect.objectContaining({ email: "valid@test.com" }),
+      );
+
       expect(mockNavigate).toHaveBeenCalledWith("/");
     });
   });

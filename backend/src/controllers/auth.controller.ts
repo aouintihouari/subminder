@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -111,4 +111,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     },
   });
+};
+
+export const getMe = async (req: Request, res: Response, _: NextFunction) => {
+  res.status(200).json({ status: "success", data: { user: req.user } });
 };

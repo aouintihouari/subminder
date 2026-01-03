@@ -63,10 +63,7 @@ class EmailService {
       email,
       subject: "Welcome to SubMinder! Please verify your email",
       templateName: "verification-email",
-      data: {
-        name,
-        url: verificationUrl,
-      },
+      data: { name, url: verificationUrl },
     });
   }
 }

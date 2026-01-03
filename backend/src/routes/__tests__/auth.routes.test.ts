@@ -153,3 +153,47 @@ describe("POST /api/v1/auth/verify-email", () => {
     expect(response.body.message).toBeDefined();
   });
 });
+
+describe("GET /api/v1/auth/me", () => {
+  it("should return 401 if no token is provided", async () => {
+    const response = await request(app).get("/api/v1/auth/me");
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toMatch(/logged in/i);
+  });
+
+  it("should return 401 if token is invalid", async () => {
+    const response = await request(app)
+      .get("/api/v1/auth/me")
+      .set("Authorization", "Bearer invalid-token");
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toMatch(/invalid token/i);
+  });
+
+  it("should return user profile if token is valid", async () => {
+    const mockUser = {
+      id: 1,
+      email: "test@example.com",
+      role: "USER",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
+
+    process.env.JWT_SECRET = "test-secret";
+    const token = require("jsonwebtoken").sign({ id: 1 }, "test-secret", {
+      expiresIn: "1h",
+    });
+
+    const response = await request(app)
+      .get("/api/v1/auth/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe("success");
+    expect(response.body.data.user.email).toBe("test@example.com");
+    expect(response.body.data.user).not.toHaveProperty("password");
+  });
+});

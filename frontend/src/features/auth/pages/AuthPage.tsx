@@ -1,5 +1,5 @@
 import { CreditCard } from "lucide-react";
-import { useSearchParams } from "react-router"; // 👈 Import React Router v7
+import { useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -7,20 +7,16 @@ import { SignupForm } from "../components/SignupForm";
 import { LoginForm } from "../components/LoginForm";
 
 export function AuthPage() {
-  // 1. On récupère les paramètres de l'URL
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 2. On détermine l'onglet actif (par défaut 'signup' si rien dans l'URL)
   const currentTab = searchParams.get("tab") || "signup";
 
-  // 3. Fonction pour changer l'onglet et mettre à jour l'URL
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#F8F9FC] px-4 py-6 font-sans">
-      {/* ... (Header avec le logo reste inchangé) ... */}
       <div className="animate-in slide-in-from-top-4 fade-in mb-6 space-y-2 text-center duration-700">
         <div className="flex justify-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition-transform duration-300 hover:scale-105">
@@ -39,7 +35,6 @@ export function AuthPage() {
         <CardHeader className="p-0 pb-0"></CardHeader>
 
         <CardContent className="p-0">
-          {/* 4. On branche la valeur et le changement sur nos fonctions */}
           <Tabs
             value={currentTab}
             onValueChange={handleTabChange}

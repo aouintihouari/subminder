@@ -1,14 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { BrowserRouter } from "react-router"; // 👈 Import du Router
+import { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { BrowserRouter } from "react-router";
 
-// On importe depuis "." car le fichier s'appelle index.tsx dans le même dossier
 import { SignupForm } from ".";
 import { authService } from "../../services/auth.service";
 
-// 1. MOCK DE REACT-ROUTER (useNavigate)
 const mockNavigate = vi.fn();
 vi.mock("react-router", async () => {
   const actual = await vi.importActual("react-router");
@@ -27,7 +25,6 @@ describe("SignupForm Component", () => {
     vi.restoreAllMocks();
   });
 
-  // 2. HELPER POUR RENDRE AVEC LE ROUTER
   const renderWithRouter = () => {
     return render(
       <BrowserRouter>
@@ -37,7 +34,7 @@ describe("SignupForm Component", () => {
   };
 
   it("renders all form fields correctly", () => {
-    renderWithRouter(); // 👈 Utilisation du helper
+    renderWithRouter();
     expect(screen.getByPlaceholderText("John Doe")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText(/name@example.com/i),

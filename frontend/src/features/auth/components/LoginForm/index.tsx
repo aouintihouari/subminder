@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
 import { Loader2, Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
+import { AxiosError } from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { AxiosError } from "axios";
 
 import { loginSchema, type LoginFormValues } from "../../schemas/login.schema";
 import { authService } from "../../services/auth.service";
+import { useAuth } from "@/hooks/authContext";
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,11 +41,13 @@ export function LoginForm() {
     setServerError(null);
 
     try {
-      await authService.login(data);
-      navigate("/");
+      const response = await authService.login(data);
+      if (response.token && response.data?.user) {
+        login(response.token, response.data.user);
+        navigate("/");
+      } else setServerError("Invalid response from server.");
     } catch (error) {
       let message = "Invalid email or password.";
-
       if (error instanceof AxiosError && error.response?.data?.message)
         message = error.response.data.message;
       else if (error instanceof Error) message = error.message;
