@@ -19,11 +19,50 @@ model User {
   verificationToken     String?   @unique
   verificationTokenExpiresAt DateTime?
 
+  subscriptions Subscription[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Float
+  currency  String   @default("EUR")
+  frequency Frequency
+
+  category  Category  @default(OTHER)
+
+  startDate DateTime
+  isActive  Boolean @default(true)
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+enum Frequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+  ONCE
+}
+
+enum Category {
+  ENTERTAINMENT
+  LEARNING
+  UTILITIES
+  WORK
+  HEALTH
+  FOOD
+  OTHER
 }

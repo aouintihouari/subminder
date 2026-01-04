@@ -14,12 +14,13 @@ declare global {
 
 export const protect = async (
   req: Request,
-  res: Response,
+  _: Response,
   next: NextFunction
 ) => {
   let token;
 
-  if (
+  if (req.cookies.jwt) token = req.cookies.jwt;
+  else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   )

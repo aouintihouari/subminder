@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
 import { Loader2, Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { AxiosError } from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,13 @@ import { loginSchema, type LoginFormValues } from "../../schemas/login.schema";
 import { authService } from "../../services/auth.service";
 import { useAuth } from "@/hooks/authContext";
 
+/**
+ * A React functional component that renders a login form with email and password fields.
+ * The form includes validation, error handling, and loading states.
+ *
+ * @component
+ * @example
+ */
 export function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -28,22 +35,44 @@ export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  /**
+   * Form instance with validation schema and default values
+   * Uses zodResolver for form validation based on loginSchema
+   */
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
+  /**
+   * Handles form submission for user login.
+   *
+   * @param data - The login form values containing email and password
+   * @returns Promise<void>
+   *
+   * @description
+   * This function:
+   * - Sets loading state to true and clears any previous server errors
+   * - Attempts to authenticate user with provided credentials
+   * - On success:
+   *   - Stores authentication token and user data
+   *   - Redirects to home page
+   * - On failure:
+   *   - Displays appropriate error message
+   * - Finally:
+   *   - Sets loading state to false
+   *
+   * @throws {Error} When authentication fails or server returns invalid response
+   * @throws {AxiosError} When network request fails
+   */
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     setServerError(null);
 
     try {
       const response = await authService.login(data);
-      if (response.token && response.data?.user) {
-        login(response.token, response.data.user);
+      if (response.data?.user) {
+        login(response.data.user);
         navigate("/");
       } else setServerError("Invalid response from server.");
     } catch (error) {
@@ -51,7 +80,6 @@ export function LoginForm() {
       if (error instanceof AxiosError && error.response?.data?.message)
         message = error.response.data.message;
       else if (error instanceof Error) message = error.message;
-
       setServerError(message);
     } finally {
       setIsLoading(false);

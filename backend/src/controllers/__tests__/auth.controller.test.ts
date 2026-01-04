@@ -38,7 +38,7 @@ describe("Auth Controller", () => {
   });
 
   describe("POST /api/v1/auth/login", () => {
-    it("should return 200 and a token if credentials are valid", async () => {
+    it("should return 200 and a cookie if credentials are valid", async () => {
       const mockUser = {
         id: 1,
         email: "test@example.com",
@@ -58,7 +58,13 @@ describe("Auth Controller", () => {
       });
 
       expect(response.status).toBe(200);
-      expect(response.body.token).toBe("fake-jwt-token");
+      expect(response.body.token).toBeUndefined();
+      expect(response.headers["set-cookie"]).toBeDefined();
+
+      const cookies = response.headers["set-cookie"];
+
+      expect(cookies[0]).toMatch(/jwt=fake-jwt-token/);
+      expect(cookies[0]).toMatch(/HttpOnly/);
       expect(response.body.data.user.email).toBe("test@example.com");
     });
 

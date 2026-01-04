@@ -7,27 +7,71 @@ import { authService } from "../services/auth.service";
 
 type VerificationStatus = "loading" | "success" | "error";
 
+/**
+ * A React component that handles email verification page functionality.
+ * Displays verification status and appropriate UI based on the verification result.
+ *
+ * @component
+ * @example
+ * // Usage in routing
+ * <Route path="/verify-email" element={<VerifyEmailPage />} />
+ */
 export const VerifyEmailPage = () => {
+  /**
+   * URL search parameters from the current location.
+   * Used to extract the verification token.
+   */
   const [searchParams] = useSearchParams();
+
+  /**
+   * Navigation function from react-router.
+   * Used to redirect users after verification.
+   */
   const navigate = useNavigate();
+
+  /**
+   * Verification token extracted from URL parameters.
+   * @type {string | null}
+   */
   const token = searchParams.get("token");
 
+  /**
+   * Current verification status state.
+   * @type {VerificationStatus}
+   * @default "loading" if token exists, otherwise "error"
+   */
   const [status, setStatus] = useState<VerificationStatus>(
     token ? "loading" : "error",
   );
 
+  /**
+   * Message displayed to the user based on verification status.
+   * @type {string}
+   */
   const [message, setMessage] = useState(
     token
       ? "Verifying your email..."
       : "Invalid link: Missing verification token.",
   );
 
+  /**
+   * Ref to prevent multiple verification attempts.
+   * @type {React.MutableRefObject<boolean>}
+   */
   const processedRef = useRef(false);
 
+  /**
+   * Effect hook to handle email verification process.
+   * Runs once when component mounts if token is present.
+   */
   useEffect(() => {
     if (processedRef.current || !token) return;
     processedRef.current = true;
 
+    /**
+     * Asynchronous function to verify email with the provided token.
+     * Updates status and message based on verification result.
+     */
     const verify = async () => {
       try {
         await authService.verifyEmail(token);
@@ -48,6 +92,10 @@ export const VerifyEmailPage = () => {
     verify();
   }, [token]);
 
+  /**
+   * Renders appropriate icon based on verification status.
+   * @returns {JSX.Element} The status icon component
+   */
   const renderIcon = () => {
     switch (status) {
       case "loading":
@@ -61,6 +109,10 @@ export const VerifyEmailPage = () => {
     }
   };
 
+  /**
+   * Renders appropriate title based on verification status.
+   * @returns {string} The status title
+   */
   const renderTitle = () => {
     switch (status) {
       case "loading":

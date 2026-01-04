@@ -1,6 +1,15 @@
 import { useAuth } from "@/hooks/authContext";
 import { Button } from "@/components/ui/button";
 
+/**
+ * Renders the Dashboard page component.
+ *
+ * This component displays a welcome message to the authenticated user
+ * along with their email address and provides a logout button.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered Dashboard page
+ */
 export function DashboardPage() {
   const { user, logout } = useAuth();
 
@@ -8,7 +17,7 @@ export function DashboardPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-gray-900">
-          Dashboard Protégé 🔒
+          Protected Dashboard 🔒
         </h1>
         <p className="mt-4 text-lg text-gray-600">
           Welcome,{" "}

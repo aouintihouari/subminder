@@ -1,4 +1,3 @@
-// src/context/auth-context.ts
 import { createContext, useContext } from "react";
 import { type User } from "@/features/auth/types/types";
 
@@ -6,7 +5,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
 }
 

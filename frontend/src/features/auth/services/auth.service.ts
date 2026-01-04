@@ -21,14 +21,14 @@ export const authService = {
     return response.data;
   },
 
+  logout: async () => {
+    await apiClient.post("/auth/logout");
+    localStorage.removeItem("user");
+  },
+
   getMe: async (): Promise<{ user: User }> => {
     const response = await apiClient.get<AuthResponse>("/auth/me");
     if (!response.data.data?.user) throw new Error("User not found");
     return { user: response.data.data.user };
-  },
-
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
   },
 };

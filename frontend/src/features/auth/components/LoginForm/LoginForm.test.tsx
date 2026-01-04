@@ -101,7 +101,6 @@ describe("LoginForm Component", () => {
     const loginSpy = vi.spyOn(authService, "login").mockResolvedValue({
       status: "success",
       message: "Login successful",
-      token: "fake-jwt-token",
       data: {
         user: { id: 1, email: "valid@test.com", name: "Tester", role: "USER" },
       },
@@ -124,7 +123,6 @@ describe("LoginForm Component", () => {
       });
 
       expect(mockLoginContext).toHaveBeenCalledWith(
-        "fake-jwt-token",
         expect.objectContaining({ email: "valid@test.com" }),
       );
 
