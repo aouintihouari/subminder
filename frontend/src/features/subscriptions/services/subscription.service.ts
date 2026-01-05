@@ -23,4 +23,23 @@ export const subscriptionService = {
     );
     return response.data;
   },
+
+  update: async (
+    id: number,
+    data: Partial<CreateSubscriptionDTO>,
+  ): Promise<SubscriptionResponse> => {
+    const payload = {
+      ...data,
+      ...(data.startDate && { startDate: data.startDate.toISOString() }),
+    };
+    const response = await apiClient.patch<SubscriptionResponse>(
+      `/subscriptions/${id}`,
+      payload,
+    );
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/subscriptions/${id}`);
+  },
 };

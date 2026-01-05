@@ -1,3 +1,5 @@
+// src/features/subscriptions/types/types.ts
+
 export const Frequency = {
   WEEKLY: "WEEKLY",
   MONTHLY: "MONTHLY",
@@ -26,6 +28,7 @@ export interface Subscription {
   currency: string;
   frequency: Frequency;
   category: Category;
+  description?: string;
   startDate: string;
   isActive: boolean;
   userId: number;
@@ -38,6 +41,7 @@ export interface CreateSubscriptionDTO {
   currency: string;
   frequency: Frequency;
   category: Category;
+  description?: string;
   startDate: Date;
 }
 

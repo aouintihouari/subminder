@@ -2,6 +2,7 @@ import { Calendar, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { type Subscription, Category } from "../types/types";
+import { SubscriptionActions } from "./SubscriptionActions";
 
 const getCategoryColor = (category: Category) => {
   switch (category) {
@@ -24,21 +25,36 @@ const getCategoryColor = (category: Category) => {
 
 interface SubscriptionCardProps {
   subscription: Subscription;
+  onEdit: (sub: Subscription) => void;
+  onDeleteSuccess: () => void;
 }
 
-export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
+export function SubscriptionCard({
+  subscription,
+  onEdit,
+  onDeleteSuccess,
+}: SubscriptionCardProps) {
   return (
     <Card className="transition-all hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-semibold text-gray-900">
+        <CardTitle className="truncate pr-4 text-base font-semibold text-gray-900">
           {subscription.name}
         </CardTitle>
-        <Badge
-          variant="secondary"
-          className={`pointer-events-none border-0 ${getCategoryColor(subscription.category)}`}
-        >
-          {subscription.category}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="secondary"
+            className={`pointer-events-none border-0 ${getCategoryColor(subscription.category)}`}
+          >
+            {subscription.category}
+          </Badge>
+
+          {/* Menu d'actions */}
+          <SubscriptionActions
+            subscription={subscription}
+            onEdit={onEdit}
+            onDeleteSuccess={onDeleteSuccess}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-gray-900">
@@ -60,6 +76,12 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
               Started {new Date(subscription.startDate).toLocaleDateString()}
             </span>
           </div>
+
+          {subscription.description && (
+            <p className="mt-2 line-clamp-2 text-xs text-gray-400 italic">
+              "{subscription.description}"
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

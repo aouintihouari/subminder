@@ -1,3 +1,4 @@
+// src/features/subscriptions/schemas/createSubscription.schema.ts
 import { z } from "zod";
 import { Frequency, Category } from "../types/types";
 
@@ -10,6 +11,7 @@ export const createSubscriptionSchema = z.object({
   startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Invalid date",
   }),
+  description: z.string().max(500, "Description is too long").optional(),
 });
 
 export type CreateSubscriptionFormValues = z.infer<

@@ -80,10 +80,12 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Netflix")).toBeInTheDocument();
-      expect(screen.getByText("Gym")).toBeInTheDocument();
-      expect(screen.getByText("15.99")).toBeInTheDocument();
-      expect(screen.getByText("30.00")).toBeInTheDocument();
+      // CORRECTION ICI : On utilise getAllByText car les éléments apparaissent
+      // potentiellement dans la liste ET dans les Stats (Top Expense)
+      expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Gym").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("15.99").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("30.00").length).toBeGreaterThan(0);
     });
   });
 

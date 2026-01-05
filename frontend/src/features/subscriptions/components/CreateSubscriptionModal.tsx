@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,16 +36,25 @@ import {
   type CreateSubscriptionFormValues,
 } from "../schemas/createSubscription.schema";
 import { subscriptionService } from "../services/subscription.service";
-import { Frequency, Category } from "../types/types";
+import { Frequency, Category, type Subscription } from "../types/types";
 
 interface CreateSubscriptionModalProps {
   onSuccess: () => void;
+  subscriptionToEdit?: Subscription | null;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export function CreateSubscriptionModal({
   onSuccess,
+  subscriptionToEdit,
+  isOpen,
+  onClose,
 }: CreateSubscriptionModalProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const showModal = isOpen !== undefined ? isOpen : internalOpen;
+  const setShowModal = onClose || setInternalOpen;
+
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<CreateSubscriptionFormValues>({
@@ -56,44 +66,86 @@ export function CreateSubscriptionModal({
       frequency: Frequency.MONTHLY,
       category: Category.ENTERTAINMENT,
       startDate: new Date().toISOString().split("T")[0],
+      description: "",
     },
   });
+
+  useEffect(() => {
+    if (subscriptionToEdit) {
+      form.reset({
+        name: subscriptionToEdit.name,
+        price: subscriptionToEdit.price,
+        currency: subscriptionToEdit.currency,
+        frequency: subscriptionToEdit.frequency,
+        category: subscriptionToEdit.category,
+        startDate: new Date(subscriptionToEdit.startDate)
+          .toISOString()
+          .split("T")[0],
+        description: subscriptionToEdit.description || "",
+      });
+    } else {
+      form.reset({
+        name: "",
+        price: 0,
+        currency: "EUR",
+        frequency: Frequency.MONTHLY,
+        category: Category.ENTERTAINMENT,
+        startDate: new Date().toISOString().split("T")[0],
+        description: "",
+      });
+    }
+  }, [subscriptionToEdit, form, showModal]);
 
   const onSubmit = async (data: CreateSubscriptionFormValues) => {
     setServerError(null);
     try {
-      await subscriptionService.create({
+      const formattedData = {
         ...data,
         startDate: new Date(data.startDate),
-      });
+      };
 
-      setOpen(false);
-      form.reset();
+      if (subscriptionToEdit) {
+        // MODE UPDATE
+        await subscriptionService.update(subscriptionToEdit.id, formattedData);
+      } else await subscriptionService.create(formattedData);
+
+      setShowModal(false);
+      if (!subscriptionToEdit) form.reset();
       onSuccess();
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.data?.message)
+      if (error instanceof AxiosError && error.response?.data?.message) {
         setServerError(error.response.data.message);
-      else setServerError("Failed to create subscription. Please try again.");
+      } else {
+        setServerError("Failed to save subscription.");
+      }
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" /> Add Subscription
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-106.25">
+    <Dialog open={showModal} onOpenChange={setShowModal}>
+      {!onClose && (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" /> Add Subscription
+          </Button>
+        </DialogTrigger>
+      )}
+
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-106.25">
         <DialogHeader>
-          <DialogTitle>New Subscription</DialogTitle>
+          <DialogTitle>
+            {subscriptionToEdit ? "Edit Subscription" : "New Subscription"}
+          </DialogTitle>
           <DialogDescription>
-            Add a new recurring expense to track.
+            {subscriptionToEdit
+              ? "Update your subscription details."
+              : "Add a new recurring expense to track."}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* NAME */}
             <FormField
               control={form.control}
               name="name"
@@ -108,6 +160,7 @@ export function CreateSubscriptionModal({
               )}
             />
 
+            {/* PRICE & CURRENCY */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -121,7 +174,7 @@ export function CreateSubscriptionModal({
                         step="0.01"
                         {...field}
                         onChange={(e) =>
-                          field.onChange(parseFloat(e.target.value) || 0)
+                          field.onChange(parseFloat(e.target.value))
                         }
                       />
                     </FormControl>
@@ -129,20 +182,16 @@ export function CreateSubscriptionModal({
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -157,6 +206,7 @@ export function CreateSubscriptionModal({
               />
             </div>
 
+            {/* FREQUENCY & CATEGORY */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -164,19 +214,16 @@ export function CreateSubscriptionModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Frequency</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select frequency" />
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.values(Frequency).map((freq) => (
-                          <SelectItem key={freq} value={freq}>
-                            {freq}
+                        {Object.values(Frequency).map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {f}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -185,26 +232,22 @@ export function CreateSubscriptionModal({
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.values(Category).map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
+                        {Object.values(Category).map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -215,6 +258,7 @@ export function CreateSubscriptionModal({
               />
             </div>
 
+            {/* START DATE */}
             <FormField
               control={form.control}
               name="startDate"
@@ -223,6 +267,25 @@ export function CreateSubscriptionModal({
                   <FormLabel>Start Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* DESCRIPTION (NOUVEAU) */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Note / Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Share with mom, cancel next month..."
+                      className="resize-none"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -243,7 +306,9 @@ export function CreateSubscriptionModal({
               {form.formState.isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Subscription
+              {subscriptionToEdit
+                ? "Update Subscription"
+                : "Create Subscription"}
             </Button>
           </form>
         </Form>
