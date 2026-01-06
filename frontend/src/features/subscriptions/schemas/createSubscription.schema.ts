@@ -1,4 +1,3 @@
-// src/features/subscriptions/schemas/createSubscription.schema.ts
 import { z } from "zod";
 import { Frequency, Category } from "../types/types";
 

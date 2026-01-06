@@ -11,7 +11,7 @@ export const signupSchema = z
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: "Passwords do not match.",
-    path: ["passwordConfirm"], // L'erreur s'affichera sous ce champ
+    path: ["passwordConfirm"],
   });
 
 export type SignupFormValues = z.infer<typeof signupSchema>;

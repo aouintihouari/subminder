@@ -4,11 +4,14 @@ import "./index.css";
 
 import App from "./App.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
+import { ThemeProvider } from "./context/ThemeProvider.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

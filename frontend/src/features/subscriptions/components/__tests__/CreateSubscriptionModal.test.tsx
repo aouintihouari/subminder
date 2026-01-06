@@ -6,6 +6,13 @@ import { CreateSubscriptionModal } from "../CreateSubscriptionModal";
 import { subscriptionService } from "../../services/subscription.service";
 import { Category, Frequency } from "../../types/types";
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("../../services/subscription.service", () => ({
   subscriptionService: {
     create: vi.fn(),
@@ -14,30 +21,38 @@ vi.mock("../../services/subscription.service", () => ({
 
 describe("CreateSubscriptionModal", () => {
   const mockOnSuccess = vi.fn();
+  const mockOnClose = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("opens the modal when clicking the add button", async () => {
-    const user = userEvent.setup();
-    render(<CreateSubscriptionModal onSuccess={mockOnSuccess} />);
-
-    const openButton = screen.getByRole("button", {
-      name: /Add Subscription/i,
-    });
-    await user.click(openButton);
+  it("renders correctly when open", () => {
+    render(
+      <CreateSubscriptionModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />,
+    );
 
     expect(
       screen.getByRole("heading", { name: /New Subscription/i }),
     ).toBeInTheDocument();
   });
 
-  it("shows validation errors for empty fields", async () => {
+  it("shows validation errors for invalid inputs", async () => {
     const user = userEvent.setup();
-    render(<CreateSubscriptionModal onSuccess={mockOnSuccess} />);
+    render(
+      <CreateSubscriptionModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />,
+    );
 
-    await user.click(screen.getByRole("button", { name: /Add Subscription/i }));
+    const nameInput = screen.getByPlaceholderText(/Netflix/i);
+    await user.type(nameInput, "a");
 
     const submitButton = screen.getByRole("button", {
       name: /Create Subscription/i,
@@ -45,7 +60,13 @@ describe("CreateSubscriptionModal", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Name is required/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/must be at least 2 characters/i),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(/Price must be greater than 0/i),
+      ).toBeInTheDocument();
     });
 
     expect(subscriptionService.create).not.toHaveBeenCalled();
@@ -59,14 +80,19 @@ describe("CreateSubscriptionModal", () => {
       data: { subscription: { id: 1, name: "Netflix" } },
     });
 
-    render(<CreateSubscriptionModal onSuccess={mockOnSuccess} />);
+    render(
+      <CreateSubscriptionModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />,
+    );
 
-    await user.click(screen.getByRole("button", { name: /Add Subscription/i }));
-
-    const nameInput = screen.getByLabelText(/Name/i);
+    const nameInput = screen.getByPlaceholderText(/Netflix/i);
     await user.type(nameInput, "Netflix Premium");
 
-    const priceInput = screen.getByLabelText(/Price/i);
+    const spinButtons = screen.getAllByRole("spinbutton");
+    const priceInput = spinButtons[0];
     await user.clear(priceInput);
     await user.type(priceInput, "19.99");
 
@@ -81,7 +107,7 @@ describe("CreateSubscriptionModal", () => {
           price: 19.99,
           currency: "EUR",
           frequency: Frequency.MONTHLY,
-          category: Category.ENTERTAINMENT,
+          category: Category.OTHER,
         }),
       );
 

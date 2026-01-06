@@ -7,7 +7,7 @@ import {
   Loader2,
   Mail,
   Lock,
-  User,
+  User as UserIcon,
   CheckCircle2,
   ArrowRight,
   Eye,
@@ -72,16 +72,16 @@ export function SignupForm() {
 
   if (success) {
     return (
-      <Card className="animate-in fade-in zoom-in-95 w-full border-x-0 border-t-4 border-b-0 border-t-indigo-600 shadow-none duration-500">
+      <Card className="animate-in fade-in zoom-in-95 bg-card w-full border-x-0 border-t-4 border-b-0 border-t-indigo-600 shadow-none duration-500 dark:border-t-indigo-500">
         <CardContent className="flex flex-col items-center space-y-4 pt-8 pb-8 text-center">
-          <div className="animate-in zoom-in flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 shadow-sm duration-300">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          <div className="animate-in zoom-in flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 shadow-sm duration-300 dark:bg-emerald-900/30">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-foreground text-2xl font-bold">
             Please verify your email
           </h2>
           <Button
-            className="mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700"
+            className="mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
             onClick={() => navigate("/auth?tab=login")}
           >
             Go to Login <ArrowRight className="ml-2 h-4 w-4" />
@@ -103,27 +103,27 @@ export function SignupForm() {
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
               <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
+                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-destructive" : "text-foreground"}`}
               >
                 Full Name
               </FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
-                  <User
-                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-red-500" : "text-gray-400 group-focus-within:text-indigo-600"}`}
+                  <UserIcon
+                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}
                   />
                   <Input
                     placeholder="John Doe"
-                    className={`h-12 rounded-xl border bg-gray-50/50 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
+                    className={`bg-muted/30 focus:bg-background h-12 rounded-xl border pl-11 text-base shadow-sm transition-all duration-200 ${
                       fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
+                        ? "border-destructive focus:ring-destructive/20"
+                        : "border-border hover:border-accent-foreground/30 focus:border-primary focus:ring-primary/20"
                     }`}
                     {...field}
                   />
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
@@ -134,28 +134,28 @@ export function SignupForm() {
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
               <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
+                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-destructive" : "text-foreground"}`}
               >
                 Email
               </FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
                   <Mail
-                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-red-500" : "text-gray-400 group-focus-within:text-indigo-600"}`}
+                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}
                   />
                   <Input
                     placeholder="name@example.com"
                     type="email"
-                    className={`h-12 rounded-xl border bg-gray-50/50 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
+                    className={`bg-muted/30 focus:bg-background h-12 rounded-xl border pl-11 text-base shadow-sm transition-all duration-200 ${
                       fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
+                        ? "border-destructive focus:ring-destructive/20"
+                        : "border-border hover:border-accent-foreground/30 focus:border-primary focus:ring-primary/20"
                     }`}
                     {...field}
                   />
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
@@ -166,29 +166,30 @@ export function SignupForm() {
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
               <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
+                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-destructive" : "text-foreground"}`}
               >
                 Password
               </FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
                   <Lock
-                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-red-500" : "text-gray-400 group-focus-within:text-indigo-600"}`}
+                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}
                   />
                   <Input
                     placeholder="••••••••"
+                    autoComplete="new-password"
                     type={showPassword ? "text" : "password"}
-                    className={`h-12 rounded-xl border bg-gray-50/50 pr-10 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
+                    className={`bg-muted/30 focus:bg-background h-12 rounded-xl border pr-10 pl-11 text-base shadow-sm transition-all duration-200 ${
                       fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
+                        ? "border-destructive focus:ring-destructive/20"
+                        : "border-border hover:border-accent-foreground/30 focus:border-primary focus:ring-primary/20"
                     }`}
                     {...field}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-3.5 right-4 text-gray-400 transition-colors hover:text-indigo-600 focus:outline-none"
+                    className="text-muted-foreground hover:text-primary absolute top-3.5 right-4 transition-colors focus:outline-none"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -198,7 +199,7 @@ export function SignupForm() {
                   </button>
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
@@ -209,29 +210,30 @@ export function SignupForm() {
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
               <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
+                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-destructive" : "text-foreground"}`}
               >
                 Confirm Password
               </FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
                   <Lock
-                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-red-500" : "text-gray-400 group-focus-within:text-indigo-600"}`}
+                    className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${fieldState.error ? "text-destructive" : "text-muted-foreground group-focus-within:text-primary"}`}
                   />
                   <Input
                     placeholder="••••••••"
+                    autoComplete="new-password"
                     type={showConfirmPassword ? "text" : "password"}
-                    className={`h-12 rounded-xl border bg-gray-50/50 pr-10 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
+                    className={`bg-muted/30 focus:bg-background h-12 rounded-xl border pr-10 pl-11 text-base shadow-sm transition-all duration-200 ${
                       fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
+                        ? "border-destructive focus:ring-destructive/20"
+                        : "border-border hover:border-accent-foreground/30 focus:border-primary focus:ring-primary/20"
                     }`}
                     {...field}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute top-3.5 right-4 text-gray-400 transition-colors hover:text-indigo-600 focus:outline-none"
+                    className="text-muted-foreground hover:text-primary absolute top-3.5 right-4 transition-colors focus:outline-none"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -241,19 +243,19 @@ export function SignupForm() {
                   </button>
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
 
         {serverError && (
-          <div className="animate-in fade-in slide-in-from-top-2 mb-2 rounded-xl border border-red-100 bg-red-50 p-3 text-center text-sm font-medium text-red-600">
+          <div className="animate-in fade-in slide-in-from-top-2 border-destructive/20 bg-destructive/10 text-destructive mb-2 rounded-xl border p-3 text-center text-sm font-medium">
             {serverError}
           </div>
         )}
 
         <Button
-          className="mt-6 h-12 w-full rounded-xl bg-indigo-600 text-base font-semibold text-white shadow-lg shadow-indigo-600/20 transition-all hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl active:scale-[0.98]"
+          className="text-primary-foreground shadow-primary/20 dark:bg-primary hover:bg-primary/90 mt-6 h-12 w-full cursor-pointer rounded-xl bg-indigo-600 text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]"
           type="submit"
           disabled={isLoading}
         >

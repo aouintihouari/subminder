@@ -1,29 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { createSubscriptionSchema } from "../schemas/subscriptionSchema";
-
-export const createSubscription = async (req: Request, res: Response) => {
-  const validatedData = createSubscriptionSchema.parse({ body: req.body });
-  const { name, price, currency, frequency, category, startDate, isActive } =
-    validatedData.body;
-
-  const userId = req.user!.id;
-
-  const subscription = await prisma.subscription.create({
-    data: {
-      name,
-      price,
-      currency,
-      frequency,
-      category,
-      startDate: new Date(startDate),
-      isActive,
-      userId,
-    },
-  });
-
-  res.status(201).json({ status: "success", data: { subscription } });
-};
+import { updateSubscriptionSchema } from "../schemas/subscriptionSchema";
+import { AppError } from "../utils/AppError";
 
 export const getMySubscriptions = async (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -38,4 +17,62 @@ export const getMySubscriptions = async (req: Request, res: Response) => {
     results: subscriptions.length,
     data: { subscriptions },
   });
+};
+
+export const createSubscription = async (req: Request, res: Response) => {
+  const validatedData = createSubscriptionSchema.parse({ body: req.body });
+  const { startDate, ...otherData } = validatedData.body;
+
+  const subscription = await prisma.subscription.create({
+    data: {
+      ...otherData,
+      startDate: new Date(startDate),
+      userId: req.user!.id,
+    },
+  });
+
+  res.status(201).json({ status: "success", data: { subscription } });
+};
+
+export const updateSubscription = async (req: Request, res: Response) => {
+  const subscriptionId = Number(req.params.id);
+  const userId = req.user!.id;
+
+  const validatedData = updateSubscriptionSchema.parse({ body: req.body });
+  const { startDate, ...otherData } = validatedData.body;
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { id: subscriptionId },
+  });
+
+  if (!subscription || subscription.userId !== userId)
+    throw new AppError("Subscription not found or permission denied", 404);
+
+  const updatedSubscription = await prisma.subscription.update({
+    where: { id: subscriptionId },
+    data: {
+      ...otherData,
+      ...(startDate && { startDate: new Date(startDate) }),
+    },
+  });
+
+  res
+    .status(200)
+    .json({ status: "success", data: { subscription: updatedSubscription } });
+};
+
+export const deleteSubscription = async (req: Request, res: Response) => {
+  const subscriptionId = Number(req.params.id);
+  const userId = req.user!.id;
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { id: subscriptionId },
+  });
+
+  if (!subscription || subscription.userId !== userId)
+    throw new AppError("Subscription not found or permission denied", 404);
+
+  await prisma.subscription.delete({ where: { id: subscriptionId } });
+
+  res.status(204).json({ status: "success", data: null });
 };

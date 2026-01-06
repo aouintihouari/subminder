@@ -46,24 +46,6 @@ export function LoginForm() {
 
   /**
    * Handles form submission for user login.
-   *
-   * @param data - The login form values containing email and password
-   * @returns Promise<void>
-   *
-   * @description
-   * This function:
-   * - Sets loading state to true and clears any previous server errors
-   * - Attempts to authenticate user with provided credentials
-   * - On success:
-   *   - Stores authentication token and user data
-   *   - Redirects to home page
-   * - On failure:
-   *   - Displays appropriate error message
-   * - Finally:
-   *   - Sets loading state to false
-   *
-   * @throws {Error} When authentication fails or server returns invalid response
-   * @throws {AxiosError} When network request fails
    */
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
@@ -97,33 +79,25 @@ export function LoginForm() {
           name="email"
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
-              <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
-              >
-                Email
-              </FormLabel>
+              <FormLabel className="ml-1">Email</FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
                   <Mail
                     className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${
                       fieldState.error
-                        ? "text-red-500"
-                        : "text-gray-400 group-focus-within:text-indigo-600"
+                        ? "text-destructive"
+                        : "text-muted-foreground group-focus-within:text-primary"
                     }`}
                   />
                   <Input
                     placeholder="name@example.com"
                     type="email"
-                    className={`h-12 rounded-xl border bg-gray-50/50 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
-                      fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
-                    }`}
+                    className="border-border focus:ring-primary/20 h-12 rounded-xl bg-transparent pl-11 text-base shadow-sm transition-all duration-200 focus:ring-2"
                     {...field}
                   />
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
@@ -133,34 +107,27 @@ export function LoginForm() {
           name="password"
           render={({ field, fieldState }) => (
             <FormItem className="space-y-1.5">
-              <FormLabel
-                className={`ml-1 text-sm font-medium ${fieldState.error ? "text-red-600" : "text-gray-700"}`}
-              >
-                Password
-              </FormLabel>
+              <FormLabel className="ml-1">Password</FormLabel>
               <FormControl>
                 <div className="group relative transition-all duration-200 focus-within:scale-[1.01]">
                   <Lock
                     className={`absolute top-3.5 left-4 h-5 w-5 transition-colors duration-200 ${
                       fieldState.error
-                        ? "text-red-500"
-                        : "text-gray-400 group-focus-within:text-indigo-600"
+                        ? "text-destructive"
+                        : "text-muted-foreground group-focus-within:text-primary"
                     }`}
                   />
                   <Input
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     type={showPassword ? "text" : "password"}
-                    className={`h-12 rounded-xl border bg-gray-50/50 pr-10 pl-11 text-base shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 ${
-                      fieldState.error
-                        ? "border-red-500 placeholder:text-red-300 focus:border-red-500 focus:ring-red-100"
-                        : "border-gray-200 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-100"
-                    }`}
+                    className="border-border focus:ring-primary/20 h-12 rounded-xl bg-transparent pr-10 pl-11 text-base shadow-sm transition-all duration-200 focus:ring-2"
                     {...field}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-3.5 right-4 text-gray-400 transition-colors hover:text-indigo-600 focus:outline-none"
+                    className="text-muted-foreground hover:text-primary absolute top-3.5 right-4 transition-colors focus:outline-none"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -170,19 +137,19 @@ export function LoginForm() {
                   </button>
                 </div>
               </FormControl>
-              <FormMessage className="ml-1 text-xs text-red-600" />
+              <FormMessage className="ml-1 text-xs" />
             </FormItem>
           )}
         />
 
         {serverError && (
-          <div className="animate-in fade-in slide-in-from-top-2 mb-2 rounded-xl border border-red-100 bg-red-50 p-3 text-center text-sm font-medium text-red-600">
+          <div className="animate-in fade-in slide-in-from-top-2 border-destructive/20 bg-destructive/10 text-destructive mb-2 rounded-xl border p-3 text-center text-sm font-medium">
             {serverError}
           </div>
         )}
 
         <Button
-          className="mt-6 h-12 w-full rounded-xl bg-indigo-600 text-base font-semibold text-white shadow-lg shadow-indigo-600/20 transition-all hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl active:scale-[0.98]"
+          className="text-primary-foreground shadow-primary/20 dark:bg-primary hover:bg-primary/90 mt-6 h-12 w-full cursor-pointer rounded-xl bg-indigo-600 text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]"
           type="submit"
           disabled={isLoading}
         >

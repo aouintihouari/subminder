@@ -4,12 +4,14 @@ import cors from "cors";
 import helmet from "helmet";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
+import cron from "node-cron";
 
 import authRoutes from "./routes/auth.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import { AppError } from "./utils/AppError";
+import { cronService } from "./services/cron.service";
 
 const app: Application = express();
 
@@ -30,6 +32,13 @@ app.get("/", (_: Request, res: Response) => {
     env: process.env.NODE_ENV,
   });
 });
+
+cron.schedule("0 9 * * *", () => {
+  console.log("⏰ Triggering Daily Renewal Check...");
+  cronService.checkUpcomingRenewals();
+});
+
+console.log("✅ Scheduler initialized: Job set for 09:00 AM daily.");
 
 app.all("*", (req: Request, _: Response) => {
   throw new AppError(`Route ${req.originalUrl} not found`, 404);

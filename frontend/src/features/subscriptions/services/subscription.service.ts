@@ -1,45 +1,62 @@
-import { apiClient } from "@/lib/axios";
-import {
-  type CreateSubscriptionDTO,
-  type SubscriptionResponse,
-} from "../types/types";
+import { axiosInstance } from "@/lib/axios";
+import { API_ROUTES } from "@/config/api.routes";
+import { type SubscriptionFormData } from "../schemas/subscriptionSchema";
+
+type SubscriptionCreatePayload = Omit<SubscriptionFormData, "startDate"> & {
+  startDate: string | Date;
+};
+
+type SubscriptionUpdatePayload = Partial<
+  Omit<SubscriptionFormData, "startDate">
+> & {
+  startDate?: string | Date;
+};
 
 export const subscriptionService = {
-  getAll: async (): Promise<SubscriptionResponse> => {
-    const response =
-      await apiClient.get<SubscriptionResponse>("/subscriptions");
+  getAll: async () => {
+    const response = await axiosInstance.get(API_ROUTES.SUBSCRIPTIONS.GET_ALL);
     return response.data;
   },
 
-  create: async (
-    data: CreateSubscriptionDTO,
-  ): Promise<SubscriptionResponse> => {
-    const response = await apiClient.post<SubscriptionResponse>(
-      "/subscriptions",
-      {
-        ...data,
-        startDate: data.startDate.toISOString(),
-      },
-    );
+  getStats: async () => {
+    const response = await axiosInstance.get(API_ROUTES.SUBSCRIPTIONS.STATS);
     return response.data;
   },
 
-  update: async (
-    id: number,
-    data: Partial<CreateSubscriptionDTO>,
-  ): Promise<SubscriptionResponse> => {
-    const payload = {
-      ...data,
-      ...(data.startDate && { startDate: data.startDate.toISOString() }),
-    };
-    const response = await apiClient.patch<SubscriptionResponse>(
-      `/subscriptions/${id}`,
+  create: async (data: SubscriptionCreatePayload) => {
+    const payload: SubscriptionCreatePayload = { ...data };
+
+    if (payload.startDate instanceof Date) {
+      payload.startDate = payload.startDate.toISOString();
+    }
+
+    const response = await axiosInstance.post(
+      API_ROUTES.SUBSCRIPTIONS.CREATE,
       payload,
     );
+
     return response.data;
   },
 
-  delete: async (id: number): Promise<void> => {
-    await apiClient.delete(`/subscriptions/${id}`);
+  update: async (id: number, data: SubscriptionUpdatePayload) => {
+    const payload: SubscriptionUpdatePayload = { ...data };
+
+    if (payload.startDate instanceof Date) {
+      payload.startDate = payload.startDate.toISOString();
+    }
+
+    const response = await axiosInstance.patch(
+      API_ROUTES.SUBSCRIPTIONS.UPDATE(id),
+      payload,
+    );
+
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await axiosInstance.delete(
+      API_ROUTES.SUBSCRIPTIONS.DELETE(id),
+    );
+    return response.data;
   },
 };

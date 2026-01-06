@@ -49,6 +49,7 @@ class EmailService {
       console.info(`📧 Email sent successfully to ${options.email}`);
     } catch (err) {
       console.error("🔥 Error sending email:", err);
+      throw err;
     }
   }
 
@@ -58,7 +59,6 @@ class EmailService {
     token: string
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
     await this.send({
       email,
       subject: "Welcome to SubMinder! Please verify your email",
@@ -66,6 +66,52 @@ class EmailService {
       data: { name, url: verificationUrl },
     });
   }
+
+  /**************************** CodeGeeX Inline Diff ****************************/
+  async sendReminderEmail(
+    email: string,
+    subscriptionName: string,
+    renewalDate: string,
+    price: number,
+    currency: string
+  ): Promise<void> {
+    try {
+      if (
+        !email ||
+        !subscriptionName ||
+        !renewalDate ||
+        price < 0 ||
+        !currency
+      ) {
+        throw new Error(
+          `Invalid parameters for reminder email: email=${email}, subscription=${subscriptionName}, renewalDate=${renewalDate}, price=${price}, currency=${currency}`
+        );
+      }
+
+      await this.send({
+        email,
+        subject: `⚠️ Upcoming Renewal: ${subscriptionName}`,
+        templateName: "reminder-email",
+        data: { subscriptionName, renewalDate, price, currency },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(
+          `Failed to send reminder email for subscription ${subscriptionName} to ${email}. Error: ${error.message}`
+        );
+      }
+      throw new Error(
+        `Unexpected error occurred while sending reminder email for subscription ${subscriptionName} to ${email}`
+      );
+    }
+    await this.send({
+      email,
+      subject: `⚠️ Upcoming Renewal: ${subscriptionName}`,
+      templateName: "reminder-email",
+      data: { subscriptionName, renewalDate, price, currency },
+    });
+  }
+  /******************** 0971041d-97fb-4c56-bcd3-5fd5439f1e5f ********************/
 }
 
 export const emailService = new EmailService();

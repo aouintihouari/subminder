@@ -37,7 +37,7 @@
   --radius: 0.75rem;
 
   /* OKLCH Colors - Light Mode */
-  --background: oklch(98% 0.02 260);
+  --background: oklch(100% 0.00011 271.152);
   --foreground: oklch(20% 0.015 260);
 
   --card: oklch(100% 0 0);
@@ -71,38 +71,46 @@
 }
 
 .dark {
-  /* OKLCH Colors - Dark Mode */
-  --background: oklch(15% 0.02 260);
-  --foreground: oklch(98% 0.02 260);
+  /* OKLCH Colors - Dark Mode (High Contrast Fix) */
 
-  --card: oklch(15% 0.02 260);
-  --card-foreground: oklch(98% 0.02 260);
+  /* Fond : Noir profond légèrement teinté de bleu (très sombre) */
+  --background: oklch(10% 0.02 260);
 
-  --popover: oklch(15% 0.02 260);
-  --popover-foreground: oklch(98% 0.02 260);
+  /* Texte : Gris très clair (pas blanc pur) */
+  --foreground: oklch(90% 0.01 260);
 
-  --primary: oklch(65% 0.22 270);
-  --primary-foreground: oklch(20% 0.015 260);
+  /* Cartes : Beaucoup plus clair que le fond pour détacher les blocs */
+  /* On passe de 14% à 18-20% de luminosité */
+  --card: oklch(18% 0.02 260);
+  --card-foreground: oklch(90% 0.01 260);
 
-  --secondary: oklch(22% 0.02 260);
-  --secondary-foreground: oklch(98% 0.02 260);
+  --popover: oklch(18% 0.02 260);
+  --popover-foreground: oklch(90% 0.01 260);
 
-  --muted: oklch(22% 0.02 260);
-  --muted-foreground: oklch(70% 0.015 260);
+  /* Primaire : Violet pastel désaturé */
+  --primary: oklch(65% 0.15 270);
+  --primary-foreground: oklch(10% 0.02 260);
 
-  --accent: oklch(22% 0.02 260);
-  --accent-foreground: oklch(98% 0.02 260);
+  --secondary: oklch(25% 0.02 260);
+  --secondary-foreground: oklch(90% 0.01 260);
 
-  --destructive: oklch(50% 0.22 25);
+  --muted: oklch(25% 0.02 260);
+  --muted-foreground: oklch(70% 0.01 260);
+
+  --accent: oklch(25% 0.02 260);
+  --accent-foreground: oklch(90% 0.01 260);
+
+  --destructive: oklch(60% 0.18 25);
   --destructive-foreground: oklch(98% 0.02 260);
 
-  --border: oklch(22% 0.02 260);
-  --input: oklch(22% 0.02 260);
-  --ring: oklch(65% 0.22 270);
+  /* Bordures : Plus claires pour bien délimiter les zones */
+  --border: oklch(28% 0.02 260);
+  --input: oklch(28% 0.02 260);
+  --ring: oklch(65% 0.15 270);
 
   /* Success colors */
-  --success: oklch(65% 0.18 160);
-  --success-foreground: oklch(98% 0.02 160);
+  --success: oklch(70% 0.15 160);
+  --success-foreground: oklch(14% 0.02 260);
 }
 
 @layer base {

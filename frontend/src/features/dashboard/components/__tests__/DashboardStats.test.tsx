@@ -69,13 +69,13 @@ describe("DashboardStats", () => {
 
   it("calculates monthly recurring costs correctly", () => {
     render(<DashboardStats subscriptions={mockSubscriptions} />);
-    expect(screen.getByText("63.33 €")).toBeInTheDocument();
+    expect(screen.getByText("€63.33")).toBeInTheDocument();
   });
 
   it("identifies the most expensive subscription correctly", () => {
     render(<DashboardStats subscriptions={mockSubscriptions} />);
-    // Le plus cher en valeur faciale est Yearly App (120)
-    expect(screen.getByText("120.00 €")).toBeInTheDocument();
+    // Correction : Format €120.00
+    expect(screen.getByText("€120.00")).toBeInTheDocument();
     expect(screen.getByText("Yearly App")).toBeInTheDocument();
   });
 

@@ -13,10 +13,21 @@ const subscriptionBodySchema = z.object({
   }),
   startDate: z.iso.datetime({ offset: true }).or(z.string().date()),
   isActive: z.boolean().optional().default(true),
+  description: z.string().max(500, "Description too long").optional(),
 });
 
 export const createSubscriptionSchema = z.object({
   body: subscriptionBodySchema,
 });
 
-export type CreateSubscriptionInput = z.infer<typeof subscriptionBodySchema>;
+export const updateSubscriptionSchema = z.object({
+  body: subscriptionBodySchema.partial(),
+});
+
+export type CreateSubscriptionInput = z.infer<
+  typeof createSubscriptionSchema
+>["body"];
+
+export type UpdateSubscriptionInput = z.infer<
+  typeof updateSubscriptionSchema
+>["body"];

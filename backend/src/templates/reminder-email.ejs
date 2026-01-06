@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+      }
+      .header {
+        background-color: #4f46e5;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        border-radius: 5px 5px 0 0;
+      }
+      .content {
+        padding: 20px;
+      }
+      .amount {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #4f46e5;
+      }
+      .footer {
+        font-size: 0.8em;
+        text-align: center;
+        color: #777;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Renewal Alert 🔔</h2>
+      </div>
+      <div class="content">
+        <p>Hello,</p>
+        <p>This is a friendly reminder from SubMinder.</p>
+        <p>
+          Your subscription for <strong><%= subscriptionName %></strong> is set
+          to renew in 3 days.
+        </p>
+
+        <p><strong>Renewal Date:</strong> <%= renewalDate %></p>
+        <p>
+          <strong>Amount:</strong>
+          <span class="amount"><%= price %> <%= currency %></span>
+        </p>
+
+        <p>
+          If you intended to cancel this subscription, please do so before the
+          date above to avoid unwanted charges.
+        </p>
+      </div>
+      <div class="footer">
+        <p>Best regards,<br />The SubMinder Team</p>
+      </div>
+    </div>
+  </body>
+</html>

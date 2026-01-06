@@ -1,5 +1,3 @@
-// src/features/subscriptions/types/types.ts
-
 export const Frequency = {
   WEEKLY: "WEEKLY",
   MONTHLY: "MONTHLY",
@@ -52,4 +50,12 @@ export interface SubscriptionResponse {
     subscriptions?: Subscription[];
     subscription?: Subscription;
   };
+}
+
+export interface SubscriptionStats {
+  totalMonthly: number;
+  totalYearly: number;
+  activeCount: number;
+  categoryDistribution: Record<string, number>;
+  mostExpensive: Subscription | null;
 }

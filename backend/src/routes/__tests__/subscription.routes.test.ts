@@ -38,6 +38,7 @@ describe("Subscription Routes", () => {
       frequency: "MONTHLY",
       category: "ENTERTAINMENT",
       startDate: "2024-01-01T00:00:00.000Z",
+      description: "Remember to cancel after trial",
     };
 
     it("should create a subscription successfully", async () => {
@@ -59,6 +60,9 @@ describe("Subscription Routes", () => {
       expect(response.body.status).toBe("success");
       expect(response.body.data.subscription.name).toBe("Netflix");
       expect(response.body.data.subscription.category).toBe("ENTERTAINMENT");
+      expect(response.body.data.subscription.description).toBe(
+        "Remember to cancel after trial"
+      );
 
       expect(prismaMock.subscription.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -119,6 +123,80 @@ describe("Subscription Routes", () => {
           where: { userId: mockUser.id },
         })
       );
+    });
+  });
+
+  describe("PATCH /api/v1/subscriptions/:id", () => {
+    const updateData = {
+      price: 19.99,
+      description: "Updated price",
+    };
+
+    it("should update a subscription successfully", async () => {
+      prismaMock.subscription.findUnique.mockResolvedValue({
+        id: 1,
+        userId: mockUser.id,
+      } as any);
+
+      prismaMock.subscription.update.mockResolvedValue({
+        id: 1,
+        name: "Netflix",
+        price: 19.99,
+        currency: "EUR",
+        frequency: "MONTHLY",
+        userId: mockUser.id,
+        description: "Updated price",
+      } as any);
+
+      const response = await request(app)
+        .patch("/api/v1/subscriptions/1")
+        .set("Authorization", `Bearer ${token}`)
+        .send(updateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.subscription.price).toBe(19.99);
+      expect(response.body.data.subscription.description).toBe("Updated price");
+    });
+
+    it("should fail (404) if subscription belongs to another user", async () => {
+      prismaMock.subscription.findUnique.mockResolvedValue({
+        id: 1,
+        userId: 2,
+      } as any);
+
+      const response = await request(app)
+        .patch("/api/v1/subscriptions/1")
+        .set("Authorization", `Bearer ${token}`)
+        .send(updateData);
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("DELETE /api/v1/subscriptions/:id", () => {
+    it("should delete a subscription successfully", async () => {
+      prismaMock.subscription.findUnique.mockResolvedValue({
+        id: 1,
+        userId: mockUser.id,
+      } as any);
+
+      prismaMock.subscription.delete.mockResolvedValue({ id: 1 } as any);
+
+      const response = await request(app)
+        .delete("/api/v1/subscriptions/1")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(204);
+    });
+
+    it("should fail if subscription does not exist", async () => {
+      prismaMock.subscription.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .delete("/api/v1/subscriptions/999")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
     });
   });
 });
