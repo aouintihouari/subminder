@@ -8,6 +8,7 @@ import cron from "node-cron";
 
 import authRoutes from "./routes/auth.routes";
 import subscriptionRoutes from "./routes/subscription.routes";
+import userRoutes from "./routes/user.routes";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import { AppError } from "./utils/AppError";
@@ -23,6 +24,7 @@ app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser() as any);
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/subscriptions", subscriptionRoutes);
 
 app.get("/", (_: Request, res: Response) => {
