@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import { useAuth } from "@/hooks/authContext";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
 import {
   type Subscription,
@@ -8,7 +7,6 @@ import {
 import { DashboardStats } from "../components/DashboardStats";
 import { SubscriptionCard } from "@/features/subscriptions/components/SubscriptionCard";
 import { CreateSubscriptionModal } from "@/features/subscriptions/components/CreateSubscriptionModal";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -64,6 +62,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { UserNav } from "@/components/UserNav";
 
 const categoryIcons: Record<Category, React.ElementType> = {
   [Category.ENTERTAINMENT]: Clapperboard,
@@ -91,7 +90,6 @@ const categoryStyles: Record<Category, string> = {
 };
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,25 +193,13 @@ export function DashboardPage() {
             <h1 className="text-foreground text-xl font-bold">SubMinder</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground hidden text-sm font-medium sm:inline-block">
-              {user?.email}
-            </span>
-            <ModeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className="text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
-            >
-              Logout
-            </Button>
+            <UserNav />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl p-4 sm:p-6">
         <div className="mb-8 space-y-6">
-          {/* HEADER SECTION */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-foreground text-2xl font-bold">Dashboard</h2>
@@ -229,12 +215,9 @@ export function DashboardPage() {
             </Button>
           </div>
 
-          {/* STATS SECTION */}
           <DashboardStats subscriptions={subscriptions} />
 
-          {/* TOOLBAR SECTION */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search Input */}
             <div className="relative w-full sm:w-[320px]">
               <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
               <Input
@@ -245,9 +228,7 @@ export function DashboardPage() {
               />
             </div>
 
-            {/* Filters & View Toggle Group */}
             <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-              {/* Category Filter */}
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="dark:border-border dark:bg-card dark:text-foreground h-10 w-full rounded-xl border-gray-200 bg-white shadow-sm outline-none focus:ring-1 focus:ring-indigo-500 sm:w-45">
                   <div className="flex items-center gap-2 truncate">
@@ -282,7 +263,6 @@ export function DashboardPage() {
                 </SelectContent>
               </Select>
 
-              {/* Sort Filter */}
               <Select
                 value={sortOrder}
                 onValueChange={(val: "asc" | "desc") => setSortOrder(val)}
@@ -308,11 +288,7 @@ export function DashboardPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-
-              {/* Separator */}
               <div className="dark:bg-border hidden h-8 w-px bg-gray-200 sm:block"></div>
-
-              {/* View Toggles */}
               <div className="dark:border-border dark:bg-card flex h-10 items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -362,7 +338,6 @@ export function DashboardPage() {
               )}
             </div>
           ) : viewMode === "grid" ? (
-            // VUE GRILLE
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {filteredSubscriptions.map((sub) => (
                 <SubscriptionCard
@@ -397,7 +372,6 @@ export function DashboardPage() {
                 <TableBody>
                   {filteredSubscriptions.map((sub) => (
                     <TableRow key={sub.id} className="hover:bg-muted/50">
-                      {/* Name + Mobile Badge */}
                       <TableCell className="text-foreground font-medium">
                         <div className="flex flex-col gap-1">
                           <span>{sub.name}</span>
@@ -409,8 +383,6 @@ export function DashboardPage() {
                           </Badge>
                         </div>
                       </TableCell>
-
-                      {/* Desktop Badge Column */}
                       <TableCell className="hidden md:table-cell">
                         <Badge
                           variant="outline"
@@ -419,21 +391,15 @@ export function DashboardPage() {
                           {sub.category}
                         </Badge>
                       </TableCell>
-
-                      {/* Price (Align Right on Mobile) */}
                       <TableCell className="text-foreground text-right font-semibold md:text-left">
                         {formatCurrency(sub.price, sub.currency)}
                       </TableCell>
-
-                      {/* Secondary Info (Hidden on Mobile) */}
                       <TableCell className="text-muted-foreground hidden capitalize md:table-cell">
                         {sub.frequency.toLowerCase()}
                       </TableCell>
                       <TableCell className="text-muted-foreground hidden md:table-cell">
                         {formatDate(sub.startDate)}
                       </TableCell>
-
-                      {/* Actions */}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

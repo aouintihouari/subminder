@@ -6,6 +6,7 @@ import { PublicLayout } from "@/layouts/PublicLayout";
 import { AuthPage } from "@/features/auth/pages/AuthPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { SettingsPage } from "@/features/auth/pages/SettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -33,5 +34,9 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <Navigate to="/" replace />,
+  },
+  {
+    path: "/settings",
+    element: <SettingsPage />,
   },
 ]);

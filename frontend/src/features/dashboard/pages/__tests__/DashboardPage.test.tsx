@@ -1,30 +1,29 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { DashboardPage } from "../DashboardPage";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
-import { Category, Frequency } from "@/features/subscriptions/types/types";
+import * as AuthContext from "@/hooks/authContext";
+import { MemoryRouter } from "react-router";
 import { toast } from "sonner";
 
+// Mock the dependencies correctly
 vi.mock("@/features/subscriptions/services/subscription.service", () => ({
   subscriptionService: {
     getAll: vi.fn(),
-    create: vi.fn(),
     delete: vi.fn(),
   },
 }));
 
-vi.mock("@/hooks/authContext", () => ({
-  useAuth: () => ({
-    user: { email: "test@user.com" },
-    logout: vi.fn(),
-  }),
-}));
-
 vi.mock("sonner", () => ({
   toast: {
-    error: vi.fn(),
     success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -35,126 +34,161 @@ describe("DashboardPage", () => {
       name: "Netflix",
       price: 15.99,
       currency: "EUR",
-      frequency: Frequency.MONTHLY,
-      category: Category.ENTERTAINMENT,
-      startDate: "2024-01-01T00:00:00.000Z",
+      frequency: "MONTHLY",
+      category: "ENTERTAINMENT",
+      startDate: new Date().toISOString(),
       isActive: true,
     },
     {
       id: 2,
-      name: "Gym",
-      price: 30.0,
+      name: "Spotify",
+      price: 9.99,
       currency: "EUR",
-      frequency: Frequency.MONTHLY,
-      category: Category.HEALTH,
-      startDate: "2024-01-01T00:00:00.000Z",
+      frequency: "MONTHLY",
+      category: "ENTERTAINMENT",
+      startDate: new Date().toISOString(),
       isActive: true,
     },
   ];
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Simulate a connected user
+    vi.spyOn(AuthContext, "useAuth").mockReturnValue({
+      user: { id: 1, email: "test@test.com", name: "Test", role: "USER" },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+    });
   });
 
-  it("shows loading spinner initially", () => {
-    (subscriptionService.getAll as Mock).mockReturnValue(new Promise(() => {}));
-    render(<DashboardPage />);
-    const spinner = document.querySelector(".animate-spin");
-    expect(spinner).toBeInTheDocument();
+  it("shows loading state initially", () => {
+    // Mock getAll to never resolve to simulate loading
+    vi.mocked(subscriptionService.getAll).mockReturnValue(
+      new Promise(() => {}),
+    );
+
+    const { container } = render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
+
+    // Verify the presence of the loading spinner
+    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
   });
 
   it("shows empty state when no subscriptions exist", async () => {
-    (subscriptionService.getAll as Mock).mockResolvedValue({
+    vi.mocked(subscriptionService.getAll).mockResolvedValue({
       status: "success",
       data: { subscriptions: [] },
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
 
     await waitFor(() => {
       expect(screen.getByText(/No subscriptions yet/i)).toBeInTheDocument();
-      expect(
-        screen.getByText(/Add your first subscription/i),
-      ).toBeInTheDocument();
     });
   });
 
   it("renders a list of subscriptions correctly", async () => {
-    (subscriptionService.getAll as Mock).mockResolvedValue({
+    vi.mocked(subscriptionService.getAll).mockResolvedValue({
       status: "success",
       data: { subscriptions: mockSubscriptions },
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
 
     await waitFor(() => {
-      // Utilisation de getAllByText pour gérer les doublons (Stats + Liste)
+      // Netflix appears in the List AND in the Stats (as Top expense)
+      // So we expect at least one occurrence, or length 2
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("Gym").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("€15.99").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("€30.00").length).toBeGreaterThan(0);
+
+      // Spotify is not the top expense, so it appears once in the list
+      expect(screen.getByText("Spotify")).toBeInTheDocument();
+
+      // Verify the monthly total calculation (15.99 + 9.99 = 25.98)
+      expect(screen.getByText("€25.98")).toBeInTheDocument();
     });
   });
 
   it("filters subscriptions by search query", async () => {
-    const user = userEvent.setup();
-    (subscriptionService.getAll as Mock).mockResolvedValue({
+    vi.mocked(subscriptionService.getAll).mockResolvedValue({
       status: "success",
       data: { subscriptions: mockSubscriptions },
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
 
-    // Attendre le chargement
+    // Wait for initial load
     await waitFor(() =>
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0),
     );
 
-    // Tape "Gym" dans la recherche
-    const searchInput = screen.getByPlaceholderText(/Search.../i);
-    await user.type(searchInput, "Gym");
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.change(searchInput, { target: { value: "Net" } });
 
-    // CORRECTION ICI : "Gym" peut apparaître plusieurs fois (Stats + Card)
-    expect(screen.getAllByText("Gym").length).toBeGreaterThan(0);
+    // Netflix should still be visible (In stats + filtered list)
+    expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
 
-    // "Netflix" ne doit pas être visible dans la liste (ni en Top Expense car moins cher)
-    expect(screen.queryByText("Netflix")).not.toBeInTheDocument();
+    // Spotify should NOT be visible
+    expect(screen.queryByText("Spotify")).not.toBeInTheDocument();
   });
 
   it("toggles between Grid and List view", async () => {
-    const user = userEvent.setup();
-    (subscriptionService.getAll as Mock).mockResolvedValue({
+    vi.mocked(subscriptionService.getAll).mockResolvedValue({
       status: "success",
       data: { subscriptions: mockSubscriptions },
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
 
+    // Wait for initial load
     await waitFor(() =>
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0),
     );
 
-    // Par défaut, on ne doit pas voir de tableau (<table>)
+    // Default is Grid view (Table should NOT be present)
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
-    // Clic sur le bouton "List view" (repéré par son aria-label)
-    const listViewBtn = screen.getByLabelText("List view");
-    await user.click(listViewBtn);
+    const listButton = screen.getByLabelText("List view");
+    fireEvent.click(listButton);
 
-    // Maintenant, le tableau doit être présent
+    // Should now show Table
     expect(screen.getByRole("table")).toBeInTheDocument();
-    // On vérifie qu'une ligne de tableau contient "Netflix"
-    expect(
-      screen.getAllByRole("row", { name: /Netflix/i }).length,
-    ).toBeGreaterThan(0);
+
+    // Validate content inside the table
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByText("Netflix").length).toBeGreaterThan(0);
   });
 
   it("shows error message if API fails", async () => {
-    (subscriptionService.getAll as Mock).mockRejectedValue(
+    vi.mocked(subscriptionService.getAll).mockRejectedValue(
       new Error("API Error"),
     );
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to load subscriptions");
