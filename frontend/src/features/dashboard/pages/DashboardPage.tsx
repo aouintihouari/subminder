@@ -4,7 +4,10 @@ import {
   type Subscription,
   Category,
 } from "@/features/subscriptions/types/types";
-import { DashboardStats } from "../components/DashboardStats";
+import {
+  DashboardStats,
+  type DashboardStatsData,
+} from "../components/DashboardStats";
 import { SubscriptionCard } from "@/features/subscriptions/components/SubscriptionCard";
 import { CreateSubscriptionModal } from "@/features/subscriptions/components/CreateSubscriptionModal";
 import { Button } from "@/components/ui/button";
@@ -91,6 +94,14 @@ const categoryStyles: Record<Category, string> = {
 
 export function DashboardPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [stats, setStats] = useState<DashboardStatsData>({
+    totalMonthly: 0,
+    totalYearly: 0,
+    activeCount: 0,
+    categoryCount: 0,
+    mostExpensive: null,
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<
@@ -107,16 +118,26 @@ export function DashboardPage() {
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   useEffect(() => {
-    fetchSubscriptions();
+    fetchDashboardData();
   }, []);
 
-  const fetchSubscriptions = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await subscriptionService.getAll();
-      if (response.status === "success" && response.data.subscriptions)
-        setSubscriptions(response.data.subscriptions);
-    } catch {
-      toast.error("Failed to load subscriptions");
+      const [subsData, statsData] = await Promise.all([
+        subscriptionService.getAll(),
+        subscriptionService.getStats(),
+      ]);
+
+      if (subsData.status === "success" && subsData.data.subscriptions) {
+        setSubscriptions(subsData.data.subscriptions);
+      }
+
+      if (statsData.status === "success" && statsData.data) {
+        setStats(statsData.data);
+      }
+    } catch (error) {
+      toast.error("Failed to load dashboard data");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +164,7 @@ export function DashboardPage() {
     setIsDeleting(true);
     try {
       await subscriptionService.delete(subToDelete);
-      setSubscriptions((prev) => prev.filter((sub) => sub.id !== subToDelete));
+      await fetchDashboardData();
       toast.success("Subscription deleted");
       setDeleteDialogOpen(false);
     } catch {
@@ -156,7 +177,7 @@ export function DashboardPage() {
 
   const handleModalSuccess = () => {
     setIsModalOpen(false);
-    fetchSubscriptions();
+    fetchDashboardData();
   };
 
   const filteredSubscriptions = useMemo(() => {
@@ -174,13 +195,6 @@ export function DashboardPage() {
         return sortOrder === "desc" ? b.price - a.price : a.price - b.price;
       });
   }, [subscriptions, searchQuery, categoryFilter, sortOrder]);
-
-  if (isLoading)
-    return (
-      <div className="bg-background flex h-screen items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-      </div>
-    );
 
   return (
     <div className="dark:bg-background min-h-screen bg-gray-50 transition-colors duration-300">
@@ -215,7 +229,7 @@ export function DashboardPage() {
             </Button>
           </div>
 
-          <DashboardStats subscriptions={subscriptions} />
+          <DashboardStats stats={stats} isLoading={isLoading} />
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:w-[320px]">
@@ -316,7 +330,11 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {filteredSubscriptions.length === 0 ? (
+          {isLoading && subscriptions.length === 0 ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            </div>
+          ) : filteredSubscriptions.length === 0 ? (
             <div className="animate-in fade-in-50 border-border bg-card flex min-h-100 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/10">
                 <Plus className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />

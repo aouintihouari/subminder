@@ -12,10 +12,11 @@ import * as AuthContext from "@/hooks/authContext";
 import { MemoryRouter } from "react-router";
 import { toast } from "sonner";
 
-// Mock the dependencies correctly
+// Mock des services
 vi.mock("@/features/subscriptions/services/subscription.service", () => ({
   subscriptionService: {
     getAll: vi.fn(),
+    getStats: vi.fn(),
     delete: vi.fn(),
   },
 }));
@@ -51,9 +52,16 @@ describe("DashboardPage", () => {
     },
   ];
 
+  const mockStats = {
+    totalMonthly: 25.98,
+    totalYearly: 311.76,
+    activeCount: 2,
+    categoryCount: 1,
+    mostExpensive: mockSubscriptions[0], // Netflix est le plus cher
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Simulate a connected user
     vi.spyOn(AuthContext, "useAuth").mockReturnValue({
       user: { id: 1, email: "test@test.com", name: "Test", role: "USER" },
       isAuthenticated: true,
@@ -64,8 +72,10 @@ describe("DashboardPage", () => {
   });
 
   it("shows loading state initially", () => {
-    // Mock getAll to never resolve to simulate loading
     vi.mocked(subscriptionService.getAll).mockReturnValue(
+      new Promise(() => {}),
+    );
+    vi.mocked(subscriptionService.getStats).mockReturnValue(
       new Promise(() => {}),
     );
 
@@ -75,14 +85,23 @@ describe("DashboardPage", () => {
       </MemoryRouter>,
     );
 
-    // Verify the presence of the loading spinner
-    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   it("shows empty state when no subscriptions exist", async () => {
     vi.mocked(subscriptionService.getAll).mockResolvedValue({
       status: "success",
       data: { subscriptions: [] },
+    });
+    vi.mocked(subscriptionService.getStats).mockResolvedValue({
+      status: "success",
+      data: {
+        totalMonthly: 0,
+        totalYearly: 0,
+        activeCount: 0,
+        categoryCount: 0,
+        mostExpensive: null,
+      },
     });
 
     render(
@@ -101,6 +120,10 @@ describe("DashboardPage", () => {
       status: "success",
       data: { subscriptions: mockSubscriptions },
     });
+    vi.mocked(subscriptionService.getStats).mockResolvedValue({
+      status: "success",
+      data: mockStats,
+    });
 
     render(
       <MemoryRouter>
@@ -109,14 +132,8 @@ describe("DashboardPage", () => {
     );
 
     await waitFor(() => {
-      // Netflix appears in the List AND in the Stats (as Top expense)
-      // So we expect at least one occurrence, or length 2
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
-
-      // Spotify is not the top expense, so it appears once in the list
       expect(screen.getByText("Spotify")).toBeInTheDocument();
-
-      // Verify the monthly total calculation (15.99 + 9.99 = 25.98)
       expect(screen.getByText("€25.98")).toBeInTheDocument();
     });
   });
@@ -126,32 +143,9 @@ describe("DashboardPage", () => {
       status: "success",
       data: { subscriptions: mockSubscriptions },
     });
-
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
-    // Wait for initial load
-    await waitFor(() =>
-      expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0),
-    );
-
-    const searchInput = screen.getByPlaceholderText(/search/i);
-    fireEvent.change(searchInput, { target: { value: "Net" } });
-
-    // Netflix should still be visible (In stats + filtered list)
-    expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
-
-    // Spotify should NOT be visible
-    expect(screen.queryByText("Spotify")).not.toBeInTheDocument();
-  });
-
-  it("toggles between Grid and List view", async () => {
-    vi.mocked(subscriptionService.getAll).mockResolvedValue({
+    vi.mocked(subscriptionService.getStats).mockResolvedValue({
       status: "success",
-      data: { subscriptions: mockSubscriptions },
+      data: mockStats,
     });
 
     render(
@@ -160,29 +154,57 @@ describe("DashboardPage", () => {
       </MemoryRouter>,
     );
 
-    // Wait for initial load
+    await waitFor(() =>
+      expect(screen.getByText("Spotify")).toBeInTheDocument(),
+    );
+
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.change(searchInput, { target: { value: "Net" } });
+
+    expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
+
+    expect(screen.queryByText("Spotify")).not.toBeInTheDocument();
+  });
+
+  it("toggles between Grid and List view", async () => {
+    vi.mocked(subscriptionService.getAll).mockResolvedValue({
+      status: "success",
+      data: { subscriptions: mockSubscriptions },
+    });
+    vi.mocked(subscriptionService.getStats).mockResolvedValue({
+      status: "success",
+      data: mockStats,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
+
     await waitFor(() =>
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0),
     );
 
-    // Default is Grid view (Table should NOT be present)
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
     const listButton = screen.getByLabelText("List view");
     fireEvent.click(listButton);
 
-    // Should now show Table
     expect(screen.getByRole("table")).toBeInTheDocument();
 
-    // Validate content inside the table
     const table = screen.getByRole("table");
-    expect(within(table).getAllByText("Netflix").length).toBeGreaterThan(0);
+    expect(within(table).getByText("Netflix")).toBeInTheDocument();
   });
 
   it("shows error message if API fails", async () => {
     vi.mocked(subscriptionService.getAll).mockRejectedValue(
       new Error("API Error"),
     );
+    vi.mocked(subscriptionService.getStats).mockResolvedValue({
+      status: "success",
+      data: mockStats,
+    });
 
     render(
       <MemoryRouter>
@@ -191,7 +213,7 @@ describe("DashboardPage", () => {
     );
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to load subscriptions");
+      expect(toast.error).toHaveBeenCalledWith("Failed to load dashboard data");
     });
   });
 });

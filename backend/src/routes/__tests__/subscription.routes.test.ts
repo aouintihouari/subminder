@@ -199,4 +199,97 @@ describe("Subscription Routes", () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe("GET /api/v1/subscriptions/stats", () => {
+    it("should calculate stats correctly", async () => {
+      const mockActiveSubs = [
+        {
+          id: 1,
+          name: "Netflix",
+          price: 10,
+          currency: "EUR",
+          frequency: "MONTHLY",
+          category: "ENTERTAINMENT",
+          isActive: true,
+          userId: mockUser.id,
+        },
+        {
+          id: 2,
+          name: "Gym",
+          price: 120,
+          currency: "EUR",
+          frequency: "YEARLY",
+          category: "HEALTH",
+          isActive: true,
+          userId: mockUser.id,
+        },
+        {
+          id: 3,
+          name: "Weekly Mag",
+          price: 10,
+          currency: "EUR",
+          frequency: "WEEKLY",
+          category: "ENTERTAINMENT",
+          isActive: true,
+          userId: mockUser.id,
+        },
+      ];
+
+      prismaMock.subscription.findMany.mockResolvedValue(mockActiveSubs as any);
+
+      const response = await request(app)
+        .get("/api/v1/subscriptions/stats")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+
+      const stats = response.body.data;
+
+      expect(stats.totalMonthly).toBeCloseTo(63.33, 1);
+      expect(stats.totalYearly).toBeCloseTo(63.33 * 12, 1);
+
+      expect(stats.activeCount).toBe(3);
+      expect(stats.categoryCount).toBe(2);
+      expect(stats.mostExpensive.name).toBe("Gym");
+
+      expect(prismaMock.subscription.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: mockUser.id, isActive: true },
+        })
+      );
+    });
+
+    it("should return zeros for a user with no active subscriptions", async () => {
+      prismaMock.subscription.findMany.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get("/api/v1/subscriptions/stats")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({
+        totalMonthly: 0,
+        totalYearly: 0,
+        activeCount: 0,
+        categoryCount: 0,
+        mostExpensive: null,
+      });
+    });
+
+    it("should ignore inactive subscriptions in calculations", async () => {
+      prismaMock.subscription.findMany.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get("/api/v1/subscriptions/stats")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.body.data.totalMonthly).toBe(0);
+      expect(prismaMock.subscription.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ isActive: true }),
+        })
+      );
+    });
+  });
 });

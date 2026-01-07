@@ -38,7 +38,7 @@ export function UserNav() {
           variant="ghost"
           className="relative h-10 w-10 rounded-full p-0 hover:bg-transparent"
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md ring-2 ring-white transition-transform duration-200 hover:scale-105 hover:shadow-lg dark:ring-slate-800">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-purple-600 text-white shadow-md ring-2 ring-white transition-transform duration-200 hover:scale-105 hover:shadow-lg dark:ring-slate-800">
             <span className="text-sm font-bold tracking-wide">{initials}</span>
           </div>
         </Button>

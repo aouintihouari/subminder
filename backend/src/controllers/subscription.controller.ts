@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Frequency } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { createSubscriptionSchema } from "../schemas/subscriptionSchema";
 import { updateSubscriptionSchema } from "../schemas/subscriptionSchema";
@@ -16,6 +17,49 @@ export const getMySubscriptions = async (req: Request, res: Response) => {
     status: "success",
     results: subscriptions.length,
     data: { subscriptions },
+  });
+};
+
+export const getSubscriptionStats = async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+
+  const subscriptions = await prisma.subscription.findMany({
+    where: { userId, isActive: true },
+  });
+
+  const totalMonthly = subscriptions.reduce((acc, sub) => {
+    switch (sub.frequency) {
+      case Frequency.WEEKLY:
+        return acc + (sub.price * 52) / 12;
+      case Frequency.MONTHLY:
+        return acc + sub.price;
+      case Frequency.YEARLY:
+        return acc + sub.price / 12;
+      case Frequency.ONCE:
+        return acc;
+      default:
+        return acc;
+    }
+  }, 0);
+
+  const totalYearly = totalMonthly * 12;
+
+  const mostExpensive = subscriptions.reduce(
+    (prev, current) => (prev.price > current.price ? prev : current),
+    subscriptions[0] || null
+  );
+
+  const uniqueCategories = new Set(subscriptions.map((s) => s.category)).size;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalMonthly,
+      totalYearly,
+      activeCount: subscriptions.length,
+      categoryCount: uniqueCategories,
+      mostExpensive,
+    },
   });
 };
 

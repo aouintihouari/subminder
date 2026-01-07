@@ -1,52 +1,42 @@
 import { ArrowUpRight, CreditCard, Wallet, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type Subscription,
-  Frequency,
-} from "@/features/subscriptions/types/types";
 import { formatCurrency } from "@/utils/formatters";
+import { type Subscription } from "@/features/subscriptions/types/types";
 
-interface DashboardStatsProps {
-  subscriptions: Subscription[];
+export interface DashboardStatsData {
+  totalMonthly: number;
+  totalYearly: number;
+  activeCount: number;
+  categoryCount: number;
+  mostExpensive: Subscription | null;
 }
 
-export function DashboardStats({ subscriptions }: DashboardStatsProps) {
-  const monthlyRecurringTotal = subscriptions.reduce((acc, sub) => {
-    if (!sub.isActive) return acc;
-    switch (sub.frequency) {
-      case Frequency.WEEKLY:
-        return acc + (sub.price * 52) / 12;
-      case Frequency.MONTHLY:
-        return acc + sub.price;
-      case Frequency.YEARLY:
-        return acc + sub.price / 12;
-      case Frequency.ONCE:
-        return acc;
-      default:
-        return acc;
-    }
-  }, 0);
+interface DashboardStatsProps {
+  stats: DashboardStatsData;
+  isLoading?: boolean;
+}
 
-  const yearlyProjection = monthlyRecurringTotal * 12;
+const ValueSkeleton = () => (
+  <div className="bg-muted h-8 w-24 animate-pulse rounded-md" />
+);
 
-  const mostExpensive = subscriptions.reduce(
-    (prev, current) => {
-      return prev.price > current.price ? prev : current;
-    },
-    subscriptions[0] || { name: "N/A", price: 0, currency: "EUR" },
-  );
-
+export function DashboardStats({
+  stats,
+  isLoading = false,
+}: DashboardStatsProps) {
   const cardClasses =
-    "bg-card shadow-sm border-border/60 py-4 sm:py-6 gap-4 sm:gap-6";
+    "bg-card shadow-sm border-border/60 py-4 sm:py-6 gap-4 sm:gap-6 transition-all duration-200 hover:shadow-md";
   const headerClasses =
     "flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6";
   const contentClasses = "px-4 sm:px-6";
-  const priceClasses = "text-2xl sm:text-3xl font-bold text-foreground";
+  const priceClasses =
+    "text-2xl sm:text-3xl font-bold text-foreground tracking-tight";
   const subtitleClasses =
-    "text-xs sm:text-sm text-muted-foreground mt-1 truncate";
+    "text-xs sm:text-sm text-muted-foreground mt-1 truncate font-medium";
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* 1. MONTHLY */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -58,12 +48,17 @@ export function DashboardStats({ subscriptions }: DashboardStatsProps) {
         </CardHeader>
         <CardContent className={contentClasses}>
           <div className={priceClasses}>
-            {formatCurrency(monthlyRecurringTotal, "EUR")}
+            {isLoading ? (
+              <ValueSkeleton />
+            ) : (
+              formatCurrency(stats.totalMonthly, "EUR")
+            )}
           </div>
           <p className={subtitleClasses}>Recurring expenses</p>
         </CardContent>
       </Card>
 
+      {/* 2. YEARLY */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -75,12 +70,17 @@ export function DashboardStats({ subscriptions }: DashboardStatsProps) {
         </CardHeader>
         <CardContent className={contentClasses}>
           <div className={priceClasses}>
-            {formatCurrency(yearlyProjection, "EUR")}
+            {isLoading ? (
+              <ValueSkeleton />
+            ) : (
+              formatCurrency(stats.totalYearly, "EUR")
+            )}
           </div>
           <p className={subtitleClasses}>Estimated cost</p>
         </CardContent>
       </Card>
 
+      {/* 3. ACTIVE */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -91,14 +91,16 @@ export function DashboardStats({ subscriptions }: DashboardStatsProps) {
           </div>
         </CardHeader>
         <CardContent className={contentClasses}>
-          <div className={priceClasses}>{subscriptions.length}</div>
+          <div className={priceClasses}>
+            {isLoading ? <ValueSkeleton /> : stats.activeCount}
+          </div>
           <p className={subtitleClasses}>
-            Across {new Set(subscriptions.map((s) => s.category)).size}{" "}
-            categories
+            Across {stats.categoryCount} categories
           </p>
         </CardContent>
       </Card>
 
+      {/* 4. TOP */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -110,9 +112,24 @@ export function DashboardStats({ subscriptions }: DashboardStatsProps) {
         </CardHeader>
         <CardContent className={contentClasses}>
           <div className={priceClasses}>
-            {formatCurrency(mostExpensive.price, mostExpensive.currency)}
+            {isLoading ? (
+              <ValueSkeleton />
+            ) : stats.mostExpensive ? (
+              formatCurrency(
+                stats.mostExpensive.price,
+                stats.mostExpensive.currency,
+              )
+            ) : (
+              "—"
+            )}
           </div>
-          <p className={subtitleClasses}>{mostExpensive.name}</p>
+          <p className={subtitleClasses}>
+            {isLoading
+              ? "Loading..."
+              : stats.mostExpensive
+                ? stats.mostExpensive.name
+                : "No subscriptions"}
+          </p>
         </CardContent>
       </Card>
     </div>
