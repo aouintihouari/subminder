@@ -153,6 +153,8 @@ jobs:
           SMTP_USER: "test@example.com"
           SMTP_PASS: "dummy-password"
           EMAIL_FROM: "no-reply@subminder.test"
+          # 👇 AJOUT CRUCIAL ICI (C'est ce qui manquait pour le backend)
+          NODE_OPTIONS: "--dns-result-order=ipv4first"
         run: node dist/server.js &
 
       - name: Install Frontend Dependencies
