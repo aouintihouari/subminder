@@ -16,7 +16,7 @@ vi.mock("react-router", async () => {
 });
 
 const mockLoginContext = vi.fn();
-vi.mock("@/hooks/authContext", () => ({
+vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
     login: mockLoginContext,
     isAuthenticated: false,

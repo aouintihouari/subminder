@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 import { authService } from "../../services/auth.service";
-import * as AuthContext from "@/hooks/authContext";
+import * as AuthContext from "@/hooks/useAuth";
 import { MemoryRouter } from "react-router";
 
 // Mocks globaux

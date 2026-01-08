@@ -16,6 +16,7 @@ interface DashboardStatsProps {
   isLoading?: boolean;
 }
 
+// Composant sorti pour la performance (Good practice ✅)
 const ValueSkeleton = () => (
   <div className="bg-muted h-8 w-24 animate-pulse rounded-md" />
 );
@@ -100,11 +101,12 @@ export function DashboardStats({
         </CardContent>
       </Card>
 
-      {/* 4. TOP */}
+      {/* 4. HIGHEST (anciennement TOP) */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
+          {/* 👇 Changement de Titre */}
           <CardTitle className="text-muted-foreground text-sm font-medium">
-            Top
+            Highest
           </CardTitle>
           <div className="rounded-full bg-red-100 p-2 dark:bg-red-500/20">
             <ArrowUpRight className="h-4 w-4 text-red-600 dark:text-red-300" />
@@ -115,10 +117,23 @@ export function DashboardStats({
             {isLoading ? (
               <ValueSkeleton />
             ) : stats.mostExpensive ? (
-              formatCurrency(
-                stats.mostExpensive.price,
-                stats.mostExpensive.currency,
-              )
+              <>
+                {formatCurrency(
+                  stats.mostExpensive.price,
+                  stats.mostExpensive.currency,
+                )}
+                {/* 👇 Ajout de la fréquence ici */}
+                <span className="text-muted-foreground ml-1 text-sm font-normal">
+                  /
+                  {stats.mostExpensive.frequency === "ONCE"
+                    ? "one-time"
+                    : stats.mostExpensive.frequency === "YEARLY"
+                      ? "yr"
+                      : stats.mostExpensive.frequency === "WEEKLY"
+                        ? "wk"
+                        : "mo"}
+                </span>
+              </>
             ) : (
               "—"
             )}

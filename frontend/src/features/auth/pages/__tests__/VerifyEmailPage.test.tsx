@@ -3,13 +3,11 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-import { VerifyEmailPage } from "./VerifyEmailPage";
-import { authService } from "../services/auth.service";
+import { VerifyEmailPage } from "../VerifyEmailPage";
+import { authService } from "../../services/auth.service";
 
-vi.mock("../services/auth.service", () => ({
-  authService: {
-    verifyEmail: vi.fn(),
-  },
+vi.mock("../../services/auth.service", () => ({
+  authService: { verifyEmail: vi.fn() },
 }));
 
 const renderWithRouter = (token: string | null) => {

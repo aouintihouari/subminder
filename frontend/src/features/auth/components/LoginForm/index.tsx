@@ -18,15 +18,8 @@ import {
 
 import { loginSchema, type LoginFormValues } from "../../schemas/login.schema";
 import { authService } from "../../services/auth.service";
-import { useAuth } from "@/hooks/authContext";
+import { useAuth } from "@/hooks/useAuth";
 
-/**
- * A React functional component that renders a login form with email and password fields.
- * The form includes validation, error handling, and loading states.
- *
- * @component
- * @example
- */
 export function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -35,18 +28,11 @@ export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  /**
-   * Form instance with validation schema and default values
-   * Uses zodResolver for form validation based on loginSchema
-   */
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  /**
-   * Handles form submission for user login.
-   */
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     setServerError(null);
@@ -90,6 +76,7 @@ export function LoginForm() {
                     }`}
                   />
                   <Input
+                    data-testid="email-input"
                     placeholder="name@example.com"
                     type="email"
                     className="border-border focus:ring-primary/20 h-12 rounded-xl bg-transparent pl-11 text-base shadow-sm transition-all duration-200 focus:ring-2"
@@ -118,6 +105,7 @@ export function LoginForm() {
                     }`}
                   />
                   <Input
+                    data-testid="password-input"
                     placeholder="••••••••"
                     autoComplete="current-password"
                     type={showPassword ? "text" : "password"}
@@ -149,6 +137,7 @@ export function LoginForm() {
         )}
 
         <Button
+          data-testid="login-submit-btn"
           className="text-primary-foreground shadow-primary/20 dark:bg-primary hover:bg-primary/90 mt-6 h-12 w-full cursor-pointer rounded-xl bg-indigo-600 text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]"
           type="submit"
           disabled={isLoading}

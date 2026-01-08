@@ -8,7 +8,7 @@ import {
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { DashboardPage } from "../DashboardPage";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
-import * as AuthContext from "@/hooks/authContext";
+import * as AuthContext from "@/hooks/useAuth";
 import { MemoryRouter } from "react-router";
 import { toast } from "sonner";
 

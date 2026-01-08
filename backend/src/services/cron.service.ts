@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { subscriptionService } from "./subscription.service";
 import { emailService } from "./email.service";
 import { isRenewalDue } from "../utils/scheduler.utils";
 
@@ -7,10 +7,7 @@ export class CronService {
     console.log("🔄 Cron Job started: Checking for upcoming renewals...");
 
     try {
-      const subscriptions = await prisma.subscription.findMany({
-        where: { isActive: true },
-        include: { user: true },
-      });
+      const subscriptions = await subscriptionService.getAllActiveWithUsers();
 
       const today = new Date();
       const targetDate = new Date(today);

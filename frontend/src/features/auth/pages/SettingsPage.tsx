@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { AxiosError } from "axios";
 
-import { useAuth } from "@/hooks/authContext";
+import { useAuth } from "@/hooks/useAuth";
 import { authService } from "../services/auth.service";
 import {
   updateProfileSchema,

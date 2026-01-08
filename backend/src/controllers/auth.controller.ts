@@ -30,8 +30,11 @@ const createSendToken = (user: any, statusCode: number, res: Response) => {
   const cookieOptions: CookieOptions = {
     expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+
+    secure:
+      process.env.NODE_ENV === "production" &&
+      process.env.FRONTEND_URL?.startsWith("https"),
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
   };
 
   res.cookie("jwt", token, cookieOptions);

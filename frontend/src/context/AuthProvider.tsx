@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { type User } from "@/features/auth/types/types";
 import { authService } from "@/features/auth/services/auth.service";
-import { AuthContext } from "@/hooks/authContext";
+import { AuthContext } from "@/hooks/useAuth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -30,8 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { user } = await authService.getMe();
         setUser(user);
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error("User not logged in (Auto-check failed)", error);
+      } catch {
+        // Silent error
       } finally {
         setIsLoading(false);
       }
