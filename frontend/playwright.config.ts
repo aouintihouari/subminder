@@ -26,8 +26,11 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    // 👇 IMPORTANT : On pointe vers le Docker (localhost:80)
-    baseURL: "http://127.0.0.1",
+    // 👇 CORRECTION CRUCIALE ICI :
+    // Si la variable CI existe (http://127.0.0.1:3000), on l'utilise.
+    // Sinon, on utilise le fallback local (http://127.0.0.1).
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || "http://127.0.0.1",
+
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
   },
@@ -38,8 +41,6 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Tu peux garder firefox et webkit si tu veux tester multi-navigateurs
-    // Pour l'instant, Chromium suffit largement pour le dev.
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
