@@ -5,7 +5,7 @@ import { ProtectedLayout } from "../ProtectedLayout";
 
 const mockUseAuth = vi.fn();
 
-vi.mock("@/hooks/authContext", () => ({
+vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 

@@ -30,6 +30,13 @@ class EmailService {
   }
 
   private async send(options: EmailOptions): Promise<void> {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+      console.log(
+        `⚠️ [DEV MODE] Email simulation (no config): Sending "${options.subject}" to ${options.email}`
+      );
+      return;
+    }
+
     try {
       const templatePath = path.join(
         __dirname,
@@ -49,7 +56,7 @@ class EmailService {
       console.info(`📧 Email sent successfully to ${options.email}`);
     } catch (err) {
       console.error("🔥 Error sending email:", err);
-      throw err;
+      if (process.env.NODE_ENV === "production") throw err;
     }
   }
 

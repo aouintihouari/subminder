@@ -5,8 +5,8 @@ import { type LoginFormValues } from "../schemas/login.schema";
 import {
   type AuthResponse,
   type User,
-  type UpdateProfileDTO, // 👈 Import
-  type UpdatePasswordDTO, // 👈 Import
+  type UpdateProfileDTO,
+  type UpdatePasswordDTO,
 } from "../types/types";
 
 export const authService = {

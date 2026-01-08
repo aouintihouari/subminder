@@ -1,24 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
-import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
-import {
-  type Subscription,
-  Category,
-} from "@/features/subscriptions/types/types";
-import {
-  DashboardStats,
-  type DashboardStatsData,
-} from "../components/DashboardStats";
+import { DashboardStats } from "../components/DashboardStats";
+import { DashboardToolbar } from "../components/DashboardToolbar";
+import { useDashboard } from "../../../hooks/useDashboard";
+
 import { SubscriptionCard } from "@/features/subscriptions/components/SubscriptionCard";
 import { CreateSubscriptionModal } from "@/features/subscriptions/components/CreateSubscriptionModal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -44,157 +30,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Plus,
-  Search,
-  Filter,
-  ArrowUpDown,
-  LayoutGrid,
-  List,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Clapperboard,
-  Activity,
-  Briefcase,
-  Utensils,
-  Book,
-  Zap,
-  Box,
-  Loader2,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Plus, MoreVertical, Edit, Trash2, Loader2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { UserNav } from "@/components/UserNav";
-
-const categoryIcons: Record<Category, React.ElementType> = {
-  [Category.ENTERTAINMENT]: Clapperboard,
-  [Category.HEALTH]: Activity,
-  [Category.WORK]: Briefcase,
-  [Category.FOOD]: Utensils,
-  [Category.LEARNING]: Book,
-  [Category.UTILITIES]: Zap,
-  [Category.OTHER]: Box,
-};
-
-const categoryStyles: Record<Category, string> = {
-  ENTERTAINMENT:
-    "text-purple-600 bg-purple-50 border-purple-100 dark:bg-purple-500/10 dark:text-purple-300 dark:border-purple-500/20",
-  LEARNING:
-    "text-blue-600 bg-blue-50 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20",
-  UTILITIES:
-    "text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700",
-  WORK: "text-gray-600 bg-gray-50 border-gray-100 dark:bg-gray-500/10 dark:text-gray-300 dark:border-gray-500/20",
-  HEALTH:
-    "text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20",
-  FOOD: "text-orange-600 bg-orange-50 border-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:border-orange-500/20",
-  OTHER:
-    "text-pink-600 bg-pink-50 border-pink-100 dark:bg-pink-500/10 dark:text-pink-300 dark:border-pink-500/20",
-};
+import { categoryStyles } from "@/features/subscriptions/config/categoryStyles";
 
 export function DashboardPage() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [stats, setStats] = useState<DashboardStatsData>({
-    totalMonthly: 0,
-    totalYearly: 0,
-    activeCount: 0,
-    categoryCount: 0,
-    mostExpensive: null,
-  });
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<
-    Subscription | undefined
-  >(undefined);
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [subToDelete, setSubToDelete] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [subsData, statsData] = await Promise.all([
-        subscriptionService.getAll(),
-        subscriptionService.getStats(),
-      ]);
-
-      if (subsData.status === "success" && subsData.data.subscriptions) {
-        setSubscriptions(subsData.data.subscriptions);
-      }
-
-      if (statsData.status === "success" && statsData.data) {
-        setStats(statsData.data);
-      }
-    } catch (error) {
-      toast.error("Failed to load dashboard data");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateClick = () => {
-    setEditingSubscription(undefined);
-    setIsModalOpen(true);
-  };
-
-  const handleEditClick = (sub: Subscription) => {
-    setEditingSubscription(sub);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteClick = (id: number) => {
-    setSubToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!subToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      await subscriptionService.delete(subToDelete);
-      await fetchDashboardData();
-      toast.success("Subscription deleted");
-      setDeleteDialogOpen(false);
-    } catch {
-      toast.error("Failed to delete subscription");
-    } finally {
-      setIsDeleting(false);
-      setSubToDelete(null);
-    }
-  };
-
-  const handleModalSuccess = () => {
-    setIsModalOpen(false);
-    fetchDashboardData();
-  };
-
-  const filteredSubscriptions = useMemo(() => {
-    return subscriptions
-      .filter((sub) => {
-        const matchesSearch = sub.name
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const matchesCategory =
-          categoryFilter === "ALL" || sub.category === categoryFilter;
-
-        return matchesSearch && matchesCategory;
-      })
-      .sort((a, b) => {
-        return sortOrder === "desc" ? b.price - a.price : a.price - b.price;
-      });
-  }, [subscriptions, searchQuery, categoryFilter, sortOrder]);
+  const { stats, subscriptions, isLoading, uiState, actions } = useDashboard();
 
   return (
     <div className="dark:bg-background min-h-screen bg-gray-50 transition-colors duration-300">
@@ -222,7 +64,7 @@ export function DashboardPage() {
               </p>
             </div>
             <Button
-              onClick={handleCreateClick}
+              onClick={actions.openCreateModal}
               className="gap-2 border-0 bg-linear-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transition-all duration-200 hover:scale-[1.02] hover:shadow-indigo-500/50 dark:from-indigo-500 dark:to-violet-500 dark:shadow-indigo-900/50"
             >
               <Plus className="h-4 w-4" /> Add Subscription
@@ -231,138 +73,54 @@ export function DashboardPage() {
 
           <DashboardStats stats={stats} isLoading={isLoading} />
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative w-full sm:w-[320px]">
-              <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
-              <Input
-                placeholder="Search..."
-                className="dark:border-border dark:bg-card dark:text-foreground h-10 w-full rounded-xl border-gray-200 bg-white pl-10 shadow-sm outline-none focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="dark:border-border dark:bg-card dark:text-foreground h-10 w-full rounded-xl border-gray-200 bg-white shadow-sm outline-none focus:ring-1 focus:ring-indigo-500 sm:w-45">
-                  <div className="flex items-center gap-2 truncate">
-                    <Filter className="text-muted-foreground h-4 w-4" />
-                    <SelectValue placeholder="Category" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="min-w-50">
-                  <SelectItem
-                    value="ALL"
-                    className="focus:bg-accent cursor-pointer rounded-lg py-2.5"
-                  >
-                    All Categories
-                  </SelectItem>
-                  {Object.values(Category).map((cat) => {
-                    const Icon = categoryIcons[cat];
-                    return (
-                      <SelectItem
-                        key={cat}
-                        value={cat}
-                        className="focus:bg-accent cursor-pointer rounded-lg py-2.5"
-                      >
-                        <div className="flex items-center">
-                          <Icon className="text-muted-foreground mr-2 size-4" />
-                          <span>
-                            {cat.charAt(0) + cat.slice(1).toLowerCase()}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={sortOrder}
-                onValueChange={(val: "asc" | "desc") => setSortOrder(val)}
-              >
-                <SelectTrigger className="dark:border-border dark:bg-card dark:text-foreground h-10 w-full rounded-xl border-gray-200 bg-white shadow-sm outline-none focus:ring-1 focus:ring-indigo-500 sm:w-50">
-                  <div className="flex items-center gap-2 truncate">
-                    <ArrowUpDown className="text-muted-foreground h-4 w-4" />
-                    <SelectValue placeholder="Sort" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="min-w-50">
-                  <SelectItem
-                    value="desc"
-                    className="focus:bg-accent cursor-pointer rounded-lg py-2.5"
-                  >
-                    Price: High to Low
-                  </SelectItem>
-                  <SelectItem
-                    value="asc"
-                    className="focus:bg-accent cursor-pointer rounded-lg py-2.5"
-                  >
-                    Price: Low to High
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="dark:bg-border hidden h-8 w-px bg-gray-200 sm:block"></div>
-              <div className="dark:border-border dark:bg-card flex h-10 items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`flex h-full flex-1 items-center justify-center rounded-lg px-3 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 sm:flex-none ${
-                    viewMode === "grid"
-                      ? "bg-gray-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`flex h-full flex-1 items-center justify-center rounded-lg px-3 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 sm:flex-none ${
-                    viewMode === "list"
-                      ? "bg-gray-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  aria-label="List view"
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <DashboardToolbar
+            searchQuery={uiState.searchQuery}
+            onSearchChange={actions.setSearchQuery}
+            categoryFilter={uiState.categoryFilter}
+            onCategoryChange={actions.setCategoryFilter}
+            sortOrder={uiState.sortOrder}
+            onSortChange={actions.setSortOrder}
+            viewMode={uiState.viewMode}
+            onViewModeChange={actions.setViewMode}
+            onCreateClick={actions.openCreateModal}
+          />
 
           {isLoading && subscriptions.length === 0 ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
-          ) : filteredSubscriptions.length === 0 ? (
+          ) : subscriptions.length === 0 ? (
             <div className="animate-in fade-in-50 border-border bg-card flex min-h-100 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/10">
                 <Plus className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h3 className="text-foreground mt-6 text-xl font-semibold">
-                {subscriptions.length === 0
+                {stats.totalMonthly === 0
                   ? "No subscriptions yet"
                   : "No results found"}
               </h3>
               <p className="text-muted-foreground mt-2 max-w-sm text-center">
-                {subscriptions.length === 0
+                {stats.totalMonthly === 0
                   ? "Track your recurring expenses by adding your first subscription."
                   : "Try adjusting your search or filters to find what you're looking for."}
               </p>
-              {subscriptions.length === 0 && (
-                <Button onClick={handleCreateClick} className="mt-6 gap-2">
+              {stats.totalMonthly === 0 && (
+                <Button
+                  onClick={actions.openCreateModal}
+                  className="mt-6 gap-2"
+                >
                   <Plus className="h-4 w-4" /> Add your first subscription
                 </Button>
               )}
             </div>
-          ) : viewMode === "grid" ? (
+          ) : uiState.viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {filteredSubscriptions.map((sub) => (
+              {subscriptions.map((sub) => (
                 <SubscriptionCard
                   key={sub.id}
                   subscription={sub}
-                  onEdit={handleEditClick}
-                  onDelete={handleDeleteClick}
+                  onEdit={actions.openEditModal}
+                  onDelete={actions.requestDelete}
                 />
               ))}
             </div>
@@ -388,7 +146,7 @@ export function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSubscriptions.map((sub) => (
+                  {subscriptions.map((sub) => (
                     <TableRow key={sub.id} className="hover:bg-muted/50">
                       <TableCell className="text-foreground font-medium">
                         <div className="flex flex-col gap-1">
@@ -431,12 +189,12 @@ export function DashboardPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => handleEditClick(sub)}
+                              onClick={() => actions.openEditModal(sub)}
                             >
                               <Edit className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDeleteClick(sub.id)}
+                              onClick={() => actions.requestDelete(sub.id)}
                               className="text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/30"
                             >
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -454,13 +212,16 @@ export function DashboardPage() {
       </main>
 
       <CreateSubscriptionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={handleModalSuccess}
-        subscriptionToEdit={editingSubscription}
+        isOpen={uiState.isModalOpen}
+        onClose={actions.closeModal}
+        onSuccess={actions.closeModal}
+        subscriptionToEdit={uiState.editingSubscription}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={uiState.deleteDialogOpen}
+        onOpenChange={actions.setDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -472,19 +233,19 @@ export function DashboardPage() {
           <AlertDialogFooter>
             <AlertDialogCancel
               className="cursor-pointer bg-white"
-              disabled={isDeleting}
+              disabled={uiState.isDeleting}
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                confirmDelete();
+                actions.confirmDelete();
               }}
-              disabled={isDeleting}
+              disabled={uiState.isDeleting}
               className="cursor-pointer bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
             >
-              {isDeleting ? (
+              {uiState.isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

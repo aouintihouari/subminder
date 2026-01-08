@@ -9,38 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate } from "@/utils/formatters";
-import { type Subscription, Category } from "../types/types";
+import { type Subscription } from "../types/types";
+import { categoryStyles, accentStyles } from "../config/categoryStyles";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
   onEdit: (sub: Subscription) => void;
   onDelete: (id: number) => void;
 }
-
-const categoryStyles: Record<Category, string> = {
-  ENTERTAINMENT:
-    "text-purple-600 bg-purple-50 border-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800",
-  LEARNING:
-    "text-blue-600 bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800",
-  UTILITIES:
-    "text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700",
-  WORK: "text-gray-600 bg-gray-50 border-gray-100 dark:bg-gray-800/50 dark:text-gray-300 dark:border-gray-700",
-  HEALTH:
-    "text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800",
-  FOOD: "text-orange-600 bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800",
-  OTHER:
-    "text-pink-600 bg-pink-50 border-pink-100 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-800",
-};
-
-const accentStyles: Record<Category, string> = {
-  ENTERTAINMENT: "bg-purple-600 dark:bg-purple-500",
-  LEARNING: "bg-blue-600 dark:bg-blue-500",
-  UTILITIES: "bg-slate-600 dark:bg-slate-500",
-  WORK: "bg-gray-600 dark:bg-gray-500",
-  HEALTH: "bg-emerald-600 dark:bg-emerald-500",
-  FOOD: "bg-orange-600 dark:bg-orange-500",
-  OTHER: "bg-pink-600 dark:bg-pink-500",
-};
 
 export function SubscriptionCard({
   subscription,
@@ -53,7 +29,6 @@ export function SubscriptionCard({
         className={`absolute top-0 left-0 transition-opacity ${accentStyles[subscription.category]} h-1 w-full sm:h-full sm:w-1`}
       />
 
-      {/* HEADER */}
       <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pl-4 sm:pl-5">
         <div className="flex flex-col gap-1.5 overflow-hidden">
           <CardTitle className="text-foreground truncate text-base leading-tight font-bold">
@@ -67,7 +42,6 @@ export function SubscriptionCard({
           </Badge>
         </div>
 
-        {/* Menu Actions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -103,7 +77,9 @@ export function SubscriptionCard({
               ? "one-time"
               : subscription.frequency === "YEARLY"
                 ? "yr"
-                : "mo"}
+                : subscription.frequency === "WEEKLY"
+                  ? "wk"
+                  : "mo"}
           </span>
         </div>
 
@@ -114,7 +90,6 @@ export function SubscriptionCard({
             </p>
           )}
 
-          {/* 2. Date */}
           <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
             <Calendar className="text-muted-foreground/70 h-3.5 w-3.5" />
             <span>Next: {formatDate(subscription.startDate)}</span>

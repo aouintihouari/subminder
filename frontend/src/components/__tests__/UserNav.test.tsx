@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { UserNav } from "../UserNav";
-import * as AuthContext from "@/hooks/authContext";
+import * as AuthContext from "@/hooks/useAuth";
 
 // Mock de useNavigate
 const mockNavigate = vi.fn();

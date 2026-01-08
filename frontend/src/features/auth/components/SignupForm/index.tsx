@@ -72,7 +72,7 @@ export function SignupForm() {
 
   if (success) {
     return (
-      <Card className="animate-in fade-in zoom-in-95 bg-card w-full border-x-0 border-t-4 border-b-0 border-t-indigo-600 shadow-none duration-500 dark:border-t-indigo-500">
+      <Card className="animate-in fade-in zoom-in-95 bg-card dark:border-t-primary w-full border-x-0 border-t-4 border-b-0 border-t-indigo-600 shadow-none duration-500">
         <CardContent className="flex flex-col items-center space-y-4 pt-8 pb-8 text-center">
           <div className="animate-in zoom-in flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 shadow-sm duration-300 dark:bg-emerald-900/30">
             <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-500" />
@@ -81,7 +81,7 @@ export function SignupForm() {
             Please verify your email
           </h2>
           <Button
-            className="mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            className="dark:bg-primary mt-6 h-11 w-full bg-indigo-600 text-white shadow-md transition-all hover:scale-[1.02] hover:bg-indigo-700 dark:hover:bg-indigo-600"
             onClick={() => navigate("/auth?tab=login")}
           >
             Go to Login <ArrowRight className="ml-2 h-4 w-4" />
