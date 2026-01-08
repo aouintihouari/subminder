@@ -45,17 +45,17 @@ jobs:
 
       - name: Generate Prisma Client
         env:
-          DATABASE_URL: "postgresql://user123:password123@localhost:5432/subminder_db_test?schema=public"
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
         run: npx prisma generate
 
       - name: Push Database Schema
         env:
-          DATABASE_URL: "postgresql://user123:password123@localhost:5432/subminder_db_test?schema=public"
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
         run: npx prisma db push --accept-data-loss
 
       - name: Run Backend Tests
         env:
-          DATABASE_URL: "postgresql://user123:password123@localhost:5432/subminder_db_test?schema=public"
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
           PORT: 8000
           NODE_ENV: test
           JWT_SECRET: "test-secret"
@@ -134,7 +134,7 @@ jobs:
       - name: Prepare E2E Database
         working-directory: ./backend
         env:
-          DATABASE_URL: "postgresql://user123:password123@localhost:5432/subminder_db_e2e?schema=public"
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
         run: |
           npx prisma db push --accept-data-loss
           npm install -D ts-node
@@ -145,7 +145,7 @@ jobs:
         env:
           PORT: 8000
           NODE_ENV: production
-          DATABASE_URL: "postgresql://user123:password123@localhost:5432/subminder_db_e2e?schema=public"
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
           JWT_SECRET: "e2e-secret-key"
           FRONTEND_URL: "http://127.0.0.1:3000"
           SMTP_HOST: "smtp.example.com"
