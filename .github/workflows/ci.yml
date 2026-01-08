@@ -1,5 +1,5 @@
 name: SubMinder CI
-
+# FORCE UPDATE CI WORKFLOW
 on:
   push:
     branches: ["main"]
