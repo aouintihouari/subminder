@@ -144,6 +144,7 @@ jobs:
         working-directory: ./backend
         env:
           PORT: 8000
+          HOST: "0.0.0.0"
           NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
           JWT_SECRET: "e2e-secret-key"
@@ -154,7 +155,7 @@ jobs:
           SMTP_PASS: "dummy-password"
           EMAIL_FROM: "no-reply@subminder.test"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
-        run: node dist/server.js &
+        run: node dist/server.js > backend.log 2>&1 &
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
@@ -168,6 +169,7 @@ jobs:
         working-directory: ./frontend
         env:
           PORT: 3000
+          VITE_API_URL: "/api"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
         run: npm run dev -- --port 3000 --host 127.0.0.1 &
 
@@ -180,6 +182,11 @@ jobs:
           PLAYWRIGHT_TEST_BASE_URL: "http://127.0.0.1:3000"
         run: npx playwright test
 
+      - name: Display Backend Logs
+        if: failure()
+        working-directory: ./backend
+        run: cat backend.log
+        
       - name: Upload Playwright Report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
