@@ -24,7 +24,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U user123"
+          --health-cmd "pg_isready -U user123 -d subminder_db_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -105,7 +105,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U user123"
+          --health-cmd "pg_isready -U user123 -d subminder_db_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -144,6 +144,8 @@ jobs:
         working-directory: ./backend
         env:
           PORT: 8000
+          # 👇 AJOUT: On force l'écoute sur toutes les interfaces IPv4
+          HOST: "0.0.0.0"
           NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
           JWT_SECRET: "e2e-secret-key"
@@ -154,7 +156,8 @@ jobs:
           SMTP_PASS: "dummy-password"
           EMAIL_FROM: "no-reply@subminder.test"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
-        run: node dist/server.js &
+        # 👇 MODIFICATION: On redirige les logs vers un fichier pour pouvoir les lire si ça plante
+        run: node dist/server.js > backend.log 2>&1 &
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
@@ -168,6 +171,8 @@ jobs:
         working-directory: ./frontend
         env:
           PORT: 3000
+          # 👇 AJOUT: Sécurité pour s'assurer que le frontend utilise bien le proxy
+          VITE_API_URL: "/api"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
         run: npm run dev -- --port 3000 --host 127.0.0.1 &
 
@@ -179,6 +184,12 @@ jobs:
         env:
           PLAYWRIGHT_TEST_BASE_URL: "http://127.0.0.1:3000"
         run: npx playwright test
+
+      # 👇 AJOUT CRUCIAL: Cette étape affichera les logs du backend UNIQUEMENT si ça plante
+      - name: Display Backend Logs
+        if: failure()
+        working-directory: ./backend
+        run: cat backend.log
 
       - name: Upload Playwright Report
         if: ${{ !cancelled() }}

@@ -7,10 +7,13 @@ process.on("uncaughtException", (err: Error) => {
 import "dotenv/config";
 import app from "./app";
 
-const PORT = process.env.PORT || 8000;
+const PORT = Number(process.env.PORT) || 8000;
+// 👇 AJOUT CRUCIAL : On définit l'hôte (0.0.0.0 par défaut pour Docker/CI)
+const HOST = process.env.HOST || "0.0.0.0";
 
-const server = app.listen(PORT, () =>
-  console.log(`\n🚀 SubMinder Backend running on port ${PORT}`)
+// 👇 MODIFICATION : On passe HOST en 2ème argument
+const server = app.listen(PORT, HOST, () =>
+  console.log(`\n🚀 SubMinder Backend running on port ${PORT} and host ${HOST}`)
 );
 
 process.on("unhandledRejection", (err: Error) => {
