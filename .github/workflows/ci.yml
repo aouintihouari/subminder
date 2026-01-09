@@ -24,7 +24,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U user123"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -105,7 +105,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U user123"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -144,7 +144,7 @@ jobs:
         working-directory: ./backend
         env:
           PORT: 8000
-          NODE_ENV: production
+          NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
           JWT_SECRET: "e2e-secret-key"
           FRONTEND_URL: "http://127.0.0.1:3000"
@@ -153,7 +153,6 @@ jobs:
           SMTP_USER: "test@example.com"
           SMTP_PASS: "dummy-password"
           EMAIL_FROM: "no-reply@subminder.test"
-          # 👇 AJOUT CRUCIAL ICI (C'est ce qui manquait pour le backend)
           NODE_OPTIONS: "--dns-result-order=ipv4first"
         run: node dist/server.js &
 
