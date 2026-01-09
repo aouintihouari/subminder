@@ -202,6 +202,31 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # On configure Node pour pouvoir lancer Prisma
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      # On installe les dépendances du backend pour avoir accès au binaire Prisma
+      - name: Install dependencies (Backend)
+        working-directory: ./backend
+        run: npm ci
+
+      # MIGRATION : On applique les changements à Neon PROD
+      - name: Run Prisma Migrations on Production
+        working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
+        run: npx prisma migrate deploy
+
+      # Si la migration réussit, on déclenche Render
       - name: Trigger Render Deployment (Backend)
         env:
           RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
@@ -210,6 +235,7 @@ jobs:
             curl -X POST "$RENDER_HOOK"
           fi
 
+      # Et enfin Netlify
       - name: Trigger Netlify Deployment (Frontend)
         env:
           NETLIFY_HOOK: ${{ secrets.NETLIFY_DEPLOY_HOOK_URL }}
@@ -219,4 +245,4 @@ jobs:
           fi
 
       - name: Deployment Triggered
-        run: echo "🚀 Deployment triggered successfully! Check Render and Netlify dashboards for progress."
+        run: echo "🚀 Database migrated & Deployment triggered! Check Render and Netlify dashboards for progress."
