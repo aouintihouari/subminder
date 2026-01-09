@@ -1,4 +1,4 @@
-name: SubMinder CI
+name: SubMinder CI/CD
 
 on:
   push:
@@ -144,7 +144,6 @@ jobs:
         working-directory: ./backend
         env:
           PORT: 8000
-          # 👇 AJOUT: On force l'écoute sur toutes les interfaces IPv4
           HOST: "0.0.0.0"
           NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
@@ -156,7 +155,6 @@ jobs:
           SMTP_PASS: "dummy-password"
           EMAIL_FROM: "no-reply@subminder.test"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
-        # 👇 MODIFICATION: On redirige les logs vers un fichier pour pouvoir les lire si ça plante
         run: node dist/server.js > backend.log 2>&1 &
 
       - name: Install Frontend Dependencies
@@ -171,7 +169,6 @@ jobs:
         working-directory: ./frontend
         env:
           PORT: 3000
-          # 👇 AJOUT: Sécurité pour s'assurer que le frontend utilise bien le proxy
           VITE_API_URL: "/api"
           NODE_OPTIONS: "--dns-result-order=ipv4first"
         run: npm run dev -- --port 3000 --host 127.0.0.1 &
@@ -185,7 +182,6 @@ jobs:
           PLAYWRIGHT_TEST_BASE_URL: "http://127.0.0.1:3000"
         run: npx playwright test
 
-      # 👇 AJOUT CRUCIAL: Cette étape affichera les logs du backend UNIQUEMENT si ça plante
       - name: Display Backend Logs
         if: failure()
         working-directory: ./backend
@@ -198,3 +194,29 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 30
+
+  deploy:
+    name: Deploy to Production
+    needs: [test-backend, test-frontend, test-e2e]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render Deployment (Backend)
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_HOOK" ]; then
+            curl -X POST "$RENDER_HOOK"
+          fi
+
+      - name: Trigger Netlify Deployment (Frontend)
+        env:
+          NETLIFY_HOOK: ${{ secrets.NETLIFY_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$NETLIFY_HOOK" ]; then
+            curl -X POST -d {} "$NETLIFY_HOOK"
+          fi
+
+      - name: Deployment Triggered
+        run: echo "🚀 Deployment triggered successfully! Check Render and Netlify dashboards for progress."
