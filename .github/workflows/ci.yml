@@ -46,16 +46,19 @@ jobs:
       - name: Generate Prisma Client
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
         run: npx prisma generate
 
       - name: Push Database Schema
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
         run: npx prisma db push --accept-data-loss
 
       - name: Run Backend Tests
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
           PORT: 8000
           NODE_ENV: test
           JWT_SECRET: "test-secret"
@@ -127,6 +130,9 @@ jobs:
 
       - name: Build Backend
         working-directory: ./backend
+        env:
+          DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
         run: |
           npx prisma generate
           npm run build
@@ -135,6 +141,7 @@ jobs:
         working-directory: ./backend
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
         run: |
           npx prisma db push --accept-data-loss
           npm install -D ts-node
@@ -147,6 +154,7 @@ jobs:
           HOST: "0.0.0.0"
           NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
           JWT_SECRET: "e2e-secret-key"
           FRONTEND_URL: "http://127.0.0.1:3000"
           SMTP_HOST: "smtp.example.com"
@@ -205,7 +213,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # On configure Node pour pouvoir lancer Prisma
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -213,12 +220,10 @@ jobs:
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
-      # On installe les dépendances du backend pour avoir accès au binaire Prisma
       - name: Install dependencies (Backend)
         working-directory: ./backend
         run: npm ci
 
-      # MIGRATION : On applique les changements à Neon PROD
       - name: Run Prisma Migrations on Production
         working-directory: ./backend
         env:
@@ -226,7 +231,6 @@ jobs:
           DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
         run: npx prisma migrate deploy
 
-      # Si la migration réussit, on déclenche Render
       - name: Trigger Render Deployment (Backend)
         env:
           RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
@@ -235,7 +239,6 @@ jobs:
             curl -X POST "$RENDER_HOOK"
           fi
 
-      # Et enfin Netlify
       - name: Trigger Netlify Deployment (Frontend)
         env:
           NETLIFY_HOOK: ${{ secrets.NETLIFY_DEPLOY_HOOK_URL }}
