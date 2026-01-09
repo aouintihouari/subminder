@@ -1,12 +1,8 @@
 import axios from "axios";
 
-<<<<<<< HEAD
 const baseURL = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
   : "/api/v1";
-=======
-const baseURL = "/api/v1";
->>>>>>> 6228ca4b87c2eff6fafe9086e510d84da414bcfb
 
 export const axiosInstance = axios.create({
   baseURL,
