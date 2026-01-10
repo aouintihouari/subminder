@@ -32,9 +32,9 @@ const createSendToken = (user: any, statusCode: number, res: Response) => {
     httpOnly: true,
 
     secure:
-      process.env.NODE_ENV === "production" &&
+      process.env.NODE_ENV === "production" ||
       process.env.FRONTEND_URL?.startsWith("https"),
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   };
 
   res.cookie("jwt", token, cookieOptions);
