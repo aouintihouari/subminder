@@ -21,11 +21,14 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
-      secure: false,
+      secure: Number(process.env.SMTP_PORT) === 465,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
     });
   }
 
@@ -74,7 +77,6 @@ class EmailService {
     });
   }
 
-  /**************************** CodeGeeX Inline Diff ****************************/
   async sendReminderEmail(
     email: string,
     subscriptionName: string,
@@ -118,7 +120,6 @@ class EmailService {
       data: { subscriptionName, renewalDate, price, currency },
     });
   }
-  /******************** 0971041d-97fb-4c56-bcd3-5fd5439f1e5f ********************/
 }
 
 export const emailService = new EmailService();
