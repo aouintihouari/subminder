@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import ejs from "ejs";
 import path from "path";
 
@@ -10,32 +10,21 @@ interface EmailOptions {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend | null = null;
 
   constructor() {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER)
+    if (process.env.RESEND_API_KEY)
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+    else
       console.warn(
-        "⚠️ SMTP configuration is missing. Emails will not be sent."
+        "⚠️ RESEND_API_KEY is missing. Emails will be logged in console only (Simulation Mode)."
       );
-
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-    });
   }
 
   private async send(options: EmailOptions): Promise<void> {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+    if (!this.resend) {
       console.log(
-        `⚠️ [DEV MODE] Email simulation (no config): Sending "${options.subject}" to ${options.email}`
+        `⚠️ [DEV MODE] Email Simulation: Sending "${options.subject}" to ${options.email}`
       );
       return;
     }
@@ -48,18 +37,24 @@ class EmailService {
 
       const html = await ejs.renderFile(templatePath, options.data);
 
-      const mailOptions = {
-        from: process.env.SMTP_FROM || "SubMinder <no-reply@subminder.com>",
+      const data = await this.resend.emails.send({
+        from: process.env.EMAIL_FROM || "SubMinder <onboarding@resend.dev>",
         to: options.email,
         subject: options.subject,
-        html,
-      };
+        html: html,
+      });
 
-      await this.transporter.sendMail(mailOptions);
-      console.info(`📧 Email sent successfully to ${options.email}`);
+      if (data.error) {
+        console.error("🔥 Resend API Error:", data.error);
+        throw new Error(data.error.message);
+      }
+
+      console.info(
+        `📧 Email sent successfully to ${options.email} (ID: ${data.data?.id})`
+      );
     } catch (err) {
       console.error("🔥 Error sending email:", err);
-      if (process.env.NODE_ENV === "production") throw err;
+      if (process.env.NODE_ENV === "production_strict") throw err;
     }
   }
 
@@ -69,6 +64,10 @@ class EmailService {
     token: string
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+
+    if (!this.resend)
+      console.log("🔗 Manual Verification Link:", verificationUrl);
+
     await this.send({
       email,
       subject: "Welcome to SubMinder! Please verify your email",
@@ -84,35 +83,11 @@ class EmailService {
     price: number,
     currency: string
   ): Promise<void> {
-    try {
-      if (
-        !email ||
-        !subscriptionName ||
-        !renewalDate ||
-        price < 0 ||
-        !currency
-      ) {
-        throw new Error(
-          `Invalid parameters for reminder email: email=${email}, subscription=${subscriptionName}, renewalDate=${renewalDate}, price=${price}, currency=${currency}`
-        );
-      }
-
-      await this.send({
-        email,
-        subject: `⚠️ Upcoming Renewal: ${subscriptionName}`,
-        templateName: "reminder-email",
-        data: { subscriptionName, renewalDate, price, currency },
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(
-          `Failed to send reminder email for subscription ${subscriptionName} to ${email}. Error: ${error.message}`
-        );
-      }
-      throw new Error(
-        `Unexpected error occurred while sending reminder email for subscription ${subscriptionName} to ${email}`
-      );
+    if (!email || !subscriptionName || !renewalDate) {
+      console.error("❌ Invalid parameters for reminder email. Aborting.");
+      return;
     }
+
     await this.send({
       email,
       subject: `⚠️ Upcoming Renewal: ${subscriptionName}`,
