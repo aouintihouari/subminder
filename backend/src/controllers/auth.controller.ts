@@ -184,6 +184,10 @@ export const logout = (_: Request, res: Response) => {
   res.cookie("jwt", "loggedout", {
     expires: new Date(Date.now() + 10),
     httpOnly: true,
+    secure:
+      process.env.NODE_ENV === "production" ||
+      process.env.FRONTEND_URL?.startsWith("https"),
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   });
 
   res.status(200).json({ status: "success" });
