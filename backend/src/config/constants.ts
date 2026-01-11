@@ -1,0 +1,3 @@
+export const COOKIE_EXPIRES_IN_DAYS = 90;
+export const PASSWORD_RESET_EXPIRES_IN_MS = 10 * 60 * 1000;
+export const EMAIL_VERIFICATION_EXPIRES_IN_MS = 24 * 60 * 60 * 1000;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Loader2, Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { AxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -153,6 +153,12 @@ export function LoginForm() {
             </>
           )}
         </Button>
+        <Link
+          to="/forgot-password"
+          className="text-primary text-sm font-medium hover:underline"
+        >
+          Forgot password?
+        </Link>
       </form>
     </Form>
   );

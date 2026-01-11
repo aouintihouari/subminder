@@ -1,7 +1,9 @@
 import { apiClient } from "@/lib/axios";
-import { API_ROUTES } from "@/config/api.routes"; // Vérifie l'import
+import { API_ROUTES } from "@/config/api.routes";
 import { type SignupFormValues } from "../schemas/signup.schema";
 import { type LoginFormValues } from "../schemas/login.schema";
+import { type ForgotPasswordFormValues } from "../schemas/forgotPassword.schema";
+import { type ResetPasswordFormValues } from "../schemas/resetPassword.schema";
 import {
   type AuthResponse,
   type User,
@@ -33,6 +35,28 @@ export const authService = {
     );
     return response.data;
   },
+
+  forgotPassword: async (
+    data: ForgotPasswordFormValues,
+  ): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+      API_ROUTES.AUTH.FORGOT_PASSWORD,
+      data,
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    data: ResetPasswordFormValues,
+  ): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+      `${API_ROUTES.AUTH.RESET_PASSWORD}/${token}`,
+      data,
+    );
+    return response.data;
+  },
+  // ---------------------------------------
 
   logout: async () => {
     await apiClient.post(API_ROUTES.AUTH.LOGOUT);

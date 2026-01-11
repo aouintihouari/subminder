@@ -95,6 +95,24 @@ class EmailService {
       data: { subscriptionName, renewalDate, price, currency },
     });
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    resetToken: string,
+    name: string
+  ): Promise<void> {
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    if (!this.resend)
+      console.log("🔐 Reset Password Link (Simulated):", resetUrl);
+
+    await this.send({
+      email,
+      subject: "Reset your password (Valid for 10 min)",
+      templateName: "reset-password-email",
+      data: { name, url: resetUrl, validity: "10 minutes" },
+    });
+  }
 }
 
 export const emailService = new EmailService();

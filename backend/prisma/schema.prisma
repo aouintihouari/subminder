@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -18,6 +19,9 @@ model User {
   isVerified            Boolean   @default(false)
   verificationToken     String?   @unique
   verificationTokenExpiresAt DateTime?
+
+  passwordResetToken       String?   @unique
+  passwordResetExpires     DateTime?
 
   subscriptions Subscription[]
 
