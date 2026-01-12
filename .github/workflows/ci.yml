@@ -46,19 +46,19 @@ jobs:
       - name: Generate Prisma Client
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
         run: npx prisma generate
 
       - name: Push Database Schema
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
         run: npx prisma db push --accept-data-loss
 
       - name: Run Backend Tests
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_test?schema=public"
           PORT: 8000
           NODE_ENV: test
           JWT_SECRET: "test-secret"
@@ -132,7 +132,7 @@ jobs:
         working-directory: ./backend
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
         run: |
           npx prisma generate
           npm run build
@@ -141,7 +141,7 @@ jobs:
         working-directory: ./backend
         env:
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
         run: |
           npx prisma db push --accept-data-loss
           npm install -D ts-node
@@ -154,7 +154,7 @@ jobs:
           HOST: "0.0.0.0"
           NODE_ENV: development
           DATABASE_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
-          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public" # <--- AJOUTÉ
+          DIRECT_URL: "postgresql://user123:password123@127.0.0.1:5432/subminder_db_e2e?schema=public"
           JWT_SECRET: "e2e-secret-key"
           FRONTEND_URL: "http://127.0.0.1:3000"
           SMTP_HOST: "smtp.example.com"
@@ -173,16 +173,8 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps
 
-      - name: Start Frontend Server
-        working-directory: ./frontend
-        env:
-          PORT: 3000
-          VITE_API_URL: "/api"
-          NODE_OPTIONS: "--dns-result-order=ipv4first"
-        run: npm run dev -- --port 3000 --host 127.0.0.1 &
-
-      - name: Wait for servers to be ready
-        run: npx wait-on tcp:8000 tcp:3000 -t 60000
+      - name: Wait for Backend to be ready
+        run: npx wait-on tcp:8000 -t 60000
 
       - name: Run Playwright Tests
         working-directory: ./frontend
@@ -249,4 +241,3 @@ jobs:
 
       - name: Deployment Triggered
         run: echo "🚀 Database migrated & Deployment triggered! Check Render and Netlify dashboards for progress."
-        
