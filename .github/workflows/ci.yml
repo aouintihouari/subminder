@@ -180,6 +180,7 @@ jobs:
         working-directory: ./frontend
         env:
           PLAYWRIGHT_TEST_BASE_URL: "http://127.0.0.1:3000"
+          VITE_API_TARGET: "http://127.0.0.1:8000"
         run: npx playwright test
 
       - name: Display Backend Logs
