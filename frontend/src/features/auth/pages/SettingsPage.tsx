@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   useForm,
   type ControllerRenderProps,
@@ -7,6 +7,7 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   User,
@@ -17,9 +18,11 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { useState } from "react";
 import { AxiosError } from "axios";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useUser, USER_QUERY_KEY } from "@/hooks/useUser";
 import { authService } from "../services/auth.service";
 import {
   updateProfileSchema,
@@ -107,43 +110,64 @@ const PasswordInput = <T extends FieldValues>({
 };
 
 export function SettingsPage() {
-  const { user, login, logout } = useAuth();
+  const { login, logout } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { data: user } = useUser();
 
-  const profileForm = useForm<UpdateProfileValues>({
-    resolver: zodResolver(updateProfileSchema),
-    defaultValues: {
-      name: "",
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: UpdateProfileValues) => authService.updateProfile(data),
+    onSuccess: (response) => {
+      toast.success("Profile updated successfully");
+
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY });
+
+      if (response.data?.user && user)
+        login({ ...user, ...response.data.user });
+
+      profileForm.reset({ name: response.data?.user?.name ?? "" });
+    },
+    onError: () => {
+      toast.error("Failed to update profile");
     },
   });
 
-  useEffect(() => {
-    if (user) {
-      profileForm.reset({
-        name: user.name ?? "",
-      });
-    }
-  }, [user, profileForm]);
-
-  const onUpdateProfile = async (data: UpdateProfileValues) => {
-    setIsUpdatingProfile(true);
-    try {
-      const res = await authService.updateProfile(data);
-      if (res.data?.user) {
-        const safeName = res.data.user.name ?? "";
-        login({ ...user!, name: safeName });
-        toast.success("Profile updated successfully");
-        profileForm.reset({ name: safeName });
+  const updatePasswordMutation = useMutation({
+    mutationFn: (data: UpdatePasswordValues) =>
+      authService.updatePassword(data),
+    onSuccess: () => {
+      toast.success("Password updated successfully");
+      passwordForm.reset();
+    },
+    onError: (error) => {
+      let msg = "Failed to update password";
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        msg = error.response.data.message;
       }
-    } catch {
-      toast.error("Failed to update profile");
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
+      toast.error(msg);
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => authService.deleteAccount(),
+    onSuccess: () => {
+      toast.success("Account deleted successfully");
+      logout();
+      queryClient.clear();
+    },
+    onError: () => {
+      toast.error("Failed to delete account");
+    },
+  });
+
+  const profileForm = useForm<UpdateProfileValues>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: { name: "" },
+  });
+
+  useEffect(() => {
+    if (user) profileForm.reset({ name: user.name ?? "" });
+  }, [user, profileForm]);
 
   const passwordForm = useForm<UpdatePasswordValues>({
     resolver: zodResolver(updatePasswordSchema),
@@ -153,35 +177,6 @@ export function SettingsPage() {
       passwordConfirm: "",
     },
   });
-
-  const onUpdatePassword = async (data: UpdatePasswordValues) => {
-    setIsUpdatingPassword(true);
-    try {
-      await authService.updatePassword(data);
-      toast.success("Password updated successfully");
-      passwordForm.reset();
-    } catch (error) {
-      let msg = "Failed to update password";
-      if (error instanceof AxiosError && error.response?.data?.message) {
-        msg = error.response.data.message;
-      }
-      toast.error(msg);
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
-
-  const onDeleteAccount = async () => {
-    setIsDeleting(true);
-    try {
-      await authService.deleteAccount();
-      toast.success("Account deleted successfully");
-      logout();
-    } catch {
-      toast.error("Failed to delete account");
-      setIsDeleting(false);
-    }
-  };
 
   return (
     <div className="animate-in fade-in container mx-auto max-w-4xl space-y-8 p-6 duration-500">
@@ -205,6 +200,7 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* PROFILE CARD */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -219,7 +215,9 @@ export function SettingsPage() {
           <CardContent>
             <Form {...profileForm}>
               <form
-                onSubmit={profileForm.handleSubmit(onUpdateProfile)}
+                onSubmit={profileForm.handleSubmit((data) =>
+                  updateProfileMutation.mutate(data),
+                )}
                 className="space-y-4"
               >
                 <div className="grid gap-4 md:grid-cols-2">
@@ -254,11 +252,12 @@ export function SettingsPage() {
                   <Button
                     type="submit"
                     disabled={
-                      isUpdatingProfile || !profileForm.formState.isDirty
+                      updateProfileMutation.isPending ||
+                      !profileForm.formState.isDirty
                     }
-                    className="bg-indigo-600 text-white hover:bg-indigo-700"
+                    className="cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700"
                   >
-                    {isUpdatingProfile ? (
+                    {updateProfileMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Saving...
@@ -276,6 +275,7 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* SECURITY CARD */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -290,7 +290,9 @@ export function SettingsPage() {
           <CardContent>
             <Form {...passwordForm}>
               <form
-                onSubmit={passwordForm.handleSubmit(onUpdatePassword)}
+                onSubmit={passwordForm.handleSubmit((data) =>
+                  updatePasswordMutation.mutate(data),
+                )}
                 className="space-y-4"
               >
                 <FormField
@@ -347,11 +349,12 @@ export function SettingsPage() {
                   <Button
                     type="submit"
                     disabled={
-                      isUpdatingPassword || !passwordForm.formState.isDirty
+                      updatePasswordMutation.isPending ||
+                      !passwordForm.formState.isDirty
                     }
-                    className="bg-indigo-600 text-white hover:bg-indigo-700"
+                    className="cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700"
                   >
-                    {isUpdatingPassword ? (
+                    {updatePasswordMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Updating...
@@ -366,6 +369,7 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* DANGER ZONE CARD */}
         <Card className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/10">
           <CardHeader>
             <div className="flex items-center gap-2 text-red-600 dark:text-red-500">
@@ -378,39 +382,45 @@ export function SettingsPage() {
           </CardHeader>
 
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Account
-                </Button>
-              </AlertDialogTrigger>
-
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onDeleteAccount();
-                    }}
-                    disabled={isDeleting}
-                    className="bg-red-600 text-white hover:bg-red-700"
+            <div className="flex justify-end">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="cursor-pointer dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800"
                   >
-                    {isDeleting ? "Deleting..." : "Yes, delete my account"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Account
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.preventDefault();
+                        deleteAccountMutation.mutate();
+                      }}
+                      disabled={deleteAccountMutation.isPending}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      {deleteAccountMutation.isPending
+                        ? "Deleting..."
+                        : "Yes, delete my account"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
       </div>

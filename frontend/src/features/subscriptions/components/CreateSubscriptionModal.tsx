@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   type SubscriptionFormData,
   subscriptionSchema,
 } from "@/features/subscriptions/schemas/subscriptionSchema";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -44,12 +45,44 @@ export function CreateSubscriptionModal({
   onSuccess,
   subscriptionToEdit,
 }: CreateSubscriptionModalProps) {
+  const queryClient = useQueryClient();
+  const isEditing = !!subscriptionToEdit;
+
+  const createMutation = useMutation({
+    mutationFn: (data: SubscriptionFormData & { startDate: string }) =>
+      subscriptionService.create(data),
+    onSuccess: () => {
+      toast.success("Subscription created successfully");
+      finalizeAction();
+    },
+    onError: () => toast.error("Failed to create subscription"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (variables: {
+      id: number;
+      data: SubscriptionFormData & { startDate: string };
+    }) => subscriptionService.update(variables.id, variables.data),
+    onSuccess: () => {
+      toast.success("Subscription updated successfully");
+      finalizeAction();
+    },
+    onError: () => toast.error("Failed to update subscription"),
+  });
+
+  const finalizeAction = () => {
+    queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    onSuccess();
+    onClose();
+  };
+
   const {
     register,
     handleSubmit,
     reset,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SubscriptionFormData>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
@@ -62,8 +95,6 @@ export function CreateSubscriptionModal({
       description: "",
     },
   });
-
-  const isEditing = !!subscriptionToEdit;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -93,32 +124,20 @@ export function CreateSubscriptionModal({
     }
   }, [isOpen, subscriptionToEdit, reset]);
 
-  const onSubmit = async (data: SubscriptionFormData) => {
-    try {
-      const payload = {
-        ...data,
-        startDate: new Date(data.startDate).toISOString(),
-      };
+  const onSubmit = (data: SubscriptionFormData) => {
+    const payload = {
+      ...data,
+      startDate: new Date(data.startDate).toISOString(),
+    };
 
-      if (isEditing && subscriptionToEdit) {
-        await subscriptionService.update(subscriptionToEdit.id, payload);
-        toast.success("Subscription updated successfully");
-      } else {
-        await subscriptionService.create(payload);
-        toast.success("Subscription created successfully");
-      }
-
-      onSuccess();
-      onClose();
-    } catch (error) {
-      console.error("❌ Submission Error:", error);
-      toast.error(
-        isEditing
-          ? "Failed to update subscription"
-          : "Failed to create subscription",
-      );
+    if (isEditing && subscriptionToEdit) {
+      updateMutation.mutate({ id: subscriptionToEdit.id, data: payload });
+    } else {
+      createMutation.mutate(payload);
     }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -146,7 +165,6 @@ export function CreateSubscriptionModal({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-6 py-6">
-          {/* ROW 1: NAME */}
           <div className="space-y-1">
             <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
               Service Name
@@ -163,7 +181,6 @@ export function CreateSubscriptionModal({
             )}
           </div>
 
-          {/* ROW 2: PRICE + CURRENCY */}
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2 space-y-1">
               <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
@@ -206,7 +223,6 @@ export function CreateSubscriptionModal({
             </div>
           </div>
 
-          {/* ROW 3: FREQUENCY + CATEGORY (FULL WIDTH ALIGNMENT) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
@@ -257,7 +273,6 @@ export function CreateSubscriptionModal({
             </div>
           </div>
 
-          {/* ROW 4: START DATE (FULL CLICK AREA + ICON) */}
           <div className="space-y-1">
             <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
               Start Date
@@ -279,7 +294,6 @@ export function CreateSubscriptionModal({
             )}
           </div>
 
-          {/* ROW 5: DESCRIPTION */}
           <div className="space-y-1">
             <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
               Note (optional)
@@ -290,7 +304,6 @@ export function CreateSubscriptionModal({
             />
           </div>
 
-          {/* ACTIONS */}
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -302,10 +315,10 @@ export function CreateSubscriptionModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-600"
             >
-              {isSubmitting ? (
+              {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

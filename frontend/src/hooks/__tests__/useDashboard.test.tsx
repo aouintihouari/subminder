@@ -3,6 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useDashboard } from "../useDashboard";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
 import { Category, Frequency } from "@/features/subscriptions/types/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
 
 vi.mock("@/features/subscriptions/services/subscription.service", () => ({
   subscriptionService: {
@@ -57,7 +67,9 @@ describe("useDashboard Hook", () => {
   });
 
   it("should fetch data on mount", async () => {
-    const { result } = renderHook(() => useDashboard());
+    const { result } = renderHook(() => useDashboard(), {
+      wrapper: createWrapper(),
+    });
 
     expect(result.current.isLoading).toBe(true);
 
@@ -68,20 +80,23 @@ describe("useDashboard Hook", () => {
   });
 
   it("should filter subscriptions by search query", async () => {
-    const { result } = renderHook(() => useDashboard());
+    const { result } = renderHook(() => useDashboard(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     act(() => {
       result.current.actions.setSearchQuery("Net");
     });
 
-    // ASSERT : On ne devrait voir que Netflix
     expect(result.current.subscriptions).toHaveLength(1);
     expect(result.current.subscriptions[0].name).toBe("Netflix");
   });
 
   it("should filter subscriptions by category", async () => {
-    const { result } = renderHook(() => useDashboard());
+    const { result } = renderHook(() => useDashboard(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     act(() => {
@@ -93,7 +108,9 @@ describe("useDashboard Hook", () => {
   });
 
   it("should handle delete action flow", async () => {
-    const { result } = renderHook(() => useDashboard());
+    const { result } = renderHook(() => useDashboard(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     act(() => {

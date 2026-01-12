@@ -1,19 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
 import { type Subscription } from "@/features/subscriptions/types/types";
 import { type DashboardStatsData } from "../features/dashboard/components/DashboardStats";
 
+const QUERY_KEYS = {
+  allSubscriptions: ["subscriptions"],
+  stats: ["dashboard-stats"],
+};
+
 export function useDashboard() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [stats, setStats] = useState<DashboardStatsData>({
-    totalMonthly: 0,
-    totalYearly: 0,
-    activeCount: 0,
-    categoryCount: 0,
-    mostExpensive: null,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,37 +26,75 @@ export function useDashboard() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [subToDelete, setSubToDelete] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const [subsData, statsData] = await Promise.all([
-        subscriptionService.getAll(),
-        subscriptionService.getStats(),
-      ]);
+  const {
+    data: subscriptions = [],
+    isLoading: isLoadingSubs,
+    isError: isSubsError,
+    error: subsError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.allSubscriptions,
+    queryFn: async () => {
+      const res = await subscriptionService.getAll();
+      return res.data?.subscriptions || [];
+    },
+  });
 
-      if (subsData.status === "success" && subsData.data.subscriptions) {
-        setSubscriptions(subsData.data.subscriptions);
-      }
+  const {
+    data: stats = {
+      totalMonthly: 0,
+      totalYearly: 0,
+      activeCount: 0,
+      categoryCount: 0,
+      mostExpensive: null,
+    } as DashboardStatsData,
+    isLoading: isLoadingStats,
+    isError: isStatsError,
+    error: statsError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.stats,
+    queryFn: async () => {
+      const res = await subscriptionService.getStats();
+      return res.data || {};
+    },
+  });
 
-      if (statsData.status === "success" && statsData.data) {
-        setStats(statsData.data);
-      }
-    } catch (error) {
-      toast.error("Failed to load dashboard data");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const isLoading = isLoadingSubs || isLoadingStats;
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (isSubsError) {
+      toast.error(
+        subsError instanceof Error
+          ? subsError.message
+          : "Failed to load subscriptions",
+      );
+    }
+    if (isStatsError) {
+      toast.error(
+        statsError instanceof Error
+          ? statsError.message
+          : "Failed to load dashboard stats",
+      );
+    }
+  }, [isSubsError, subsError, isStatsError, statsError]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => subscriptionService.delete(id),
+    onSuccess: () => {
+      toast.success("Subscription deleted");
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allSubscriptions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
+      setDeleteDialogOpen(false);
+      setSubToDelete(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete subscription");
+    },
+  });
 
   const filteredSubscriptions = useMemo(() => {
     return subscriptions
-      .filter((sub) => {
+      .filter((sub: Subscription) => {
         const matchesSearch = sub.name
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
@@ -65,7 +102,7 @@ export function useDashboard() {
           categoryFilter === "ALL" || sub.category === categoryFilter;
         return matchesSearch && matchesCategory;
       })
-      .sort((a, b) => {
+      .sort((a: Subscription, b: Subscription) => {
         return sortOrder === "desc" ? b.price - a.price : a.price - b.price;
       });
   }, [subscriptions, searchQuery, categoryFilter, sortOrder]);
@@ -82,7 +119,8 @@ export function useDashboard() {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    fetchDashboardData();
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allSubscriptions });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
   };
 
   const requestDelete = (id: number) => {
@@ -90,19 +128,9 @@ export function useDashboard() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!subToDelete) return;
-    setIsDeleting(true);
-    try {
-      await subscriptionService.delete(subToDelete);
-      await fetchDashboardData();
-      toast.success("Subscription deleted");
-      setDeleteDialogOpen(false);
-    } catch {
-      toast.error("Failed to delete subscription");
-    } finally {
-      setIsDeleting(false);
-      setSubToDelete(null);
+  const confirmDelete = () => {
+    if (subToDelete) {
+      deleteMutation.mutate(subToDelete);
     }
   };
 
@@ -119,7 +147,7 @@ export function useDashboard() {
       isModalOpen,
       editingSubscription,
       deleteDialogOpen,
-      isDeleting,
+      isDeleting: deleteMutation.isPending,
     },
 
     actions: {

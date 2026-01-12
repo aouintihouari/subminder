@@ -1,22 +1,40 @@
-import { createContext, useContext } from "react";
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { authService } from "@/features/auth/services/auth.service";
+import { USER_QUERY_KEY } from "@/hooks/useUser";
 import { type User } from "@/features/auth/types/types";
 
-export interface AuthContextType {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  user: User | null;
-  login: (user: User) => void;
-  logout: () => void;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined,
-);
-
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined)
-    throw new Error("useAuth must be used within an AuthProvider");
+  const { user, isAuthenticated, isLoading, setAuth, clearAuth } =
+    useAuthStore();
+  const queryClient = useQueryClient();
 
-  return context;
+  const login = useCallback(
+    (newUser: User) => {
+      setAuth(newUser);
+    },
+    [setAuth],
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+
+    queryClient.removeQueries({ queryKey: USER_QUERY_KEY });
+    queryClient.clear();
+    clearAuth();
+    window.location.href = "/auth?tab=login";
+  }, [queryClient, clearAuth]);
+
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+  };
 }

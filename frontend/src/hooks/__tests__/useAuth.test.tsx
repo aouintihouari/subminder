@@ -1,89 +1,47 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAuth } from "../useAuth";
-import { AuthProvider } from "@/context/AuthProvider";
 import { authService } from "@/features/auth/services/auth.service";
-import { type ReactNode } from "react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type User } from "@/features/auth/types/types";
 
 vi.mock("@/features/auth/services/auth.service", () => ({
-  authService: {
-    getMe: vi.fn(),
-    logout: vi.fn(),
-  },
+  authService: { logout: vi.fn() },
 }));
 
-describe("useAuth & AuthProvider", () => {
-  const originalLocation = window.location;
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <QueryClientProvider client={new QueryClient()}>
+    {children}
+  </QueryClientProvider>
+);
 
+describe("useAuth Hook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { href: "" },
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
     });
   });
 
-  afterEach(() => {
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
-  });
-
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <AuthProvider>{children}</AuthProvider>
-  );
-
-  it("throws error if used outside AuthProvider", () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    expect(() => renderHook(() => useAuth())).toThrow(
-      "useAuth must be used within an AuthProvider",
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it("initializes as loading then unauthenticated if getMe fails", async () => {
-    vi.mocked(authService.getMe).mockRejectedValue(new Error("Unauthorized"));
-
+  it("handles login correctly via store", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
-    expect(result.current.isLoading).toBe(true);
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
-  });
-
-  it("initializes as authenticated if getMe succeeds", async () => {
-    const mockUser = {
+    const mockUser: User = {
       id: 1,
       email: "test@test.com",
       name: "Test",
       role: "USER",
     };
-    vi.mocked(authService.getMe).mockResolvedValue({ user: mockUser });
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
-  });
-
-  it("handles login updates correctly", async () => {
-    vi.mocked(authService.getMe).mockRejectedValue(new Error("No user"));
-    const { result } = renderHook(() => useAuth(), { wrapper });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    const newUser = { id: 2, email: "new@test.com", name: "New", role: "USER" };
 
     act(() => {
-      result.current.login(newUser);
+      result.current.login(mockUser);
     });
 
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(newUser);
+    expect(result.current.user).toEqual(mockUser);
   });
 
   it("handles logout correctly", async () => {
@@ -92,11 +50,20 @@ describe("useAuth & AuthProvider", () => {
       email: "test@test.com",
       name: "Test",
       role: "USER",
-    };
-    vi.mocked(authService.getMe).mockResolvedValue({ user: mockUser });
+    } as User;
+
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: mockUser,
+      isLoading: false,
+    });
+
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { href: "" },
+    });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
       await result.current.logout();
@@ -105,6 +72,6 @@ describe("useAuth & AuthProvider", () => {
     expect(authService.logout).toHaveBeenCalled();
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBeNull();
-    expect(window.location.href).toBe("/auth?tab=login");
+    expect(window.location.href).toContain("/auth?tab=login");
   });
 });

@@ -1,25 +1,18 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { MemoryRouter, Routes, Route } from "react-router";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { VerifyEmailPage } from "../VerifyEmailPage";
 import { authService } from "../../services/auth.service";
+import { renderWithProviders } from "@/test/utils";
 
 vi.mock("../../services/auth.service", () => ({
   authService: { verifyEmail: vi.fn() },
 }));
 
-const renderWithRouter = (token: string | null) => {
-  const initialEntry = token ? `/verify-email?token=${token}` : "/verify-email";
-
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+const renderPage = (token: string | null) => {
+  const route = token ? `/verify-email?token=${token}` : "/verify-email";
+  return renderWithProviders(<VerifyEmailPage />, { route });
 };
 
 describe("VerifyEmailPage", () => {
@@ -28,8 +21,8 @@ describe("VerifyEmailPage", () => {
   });
 
   it("shows error state immediately if token is missing", () => {
-    renderWithRouter(null);
-    expect(screen.getByText(/Verification Failed/i)).toBeInTheDocument();
+    renderPage(null);
+    expect(screen.getByText(/Invalid Link/i)).toBeInTheDocument();
     expect(screen.getByText(/Missing verification token/i)).toBeInTheDocument();
     expect(authService.verifyEmail).not.toHaveBeenCalled();
   });
@@ -40,7 +33,7 @@ describe("VerifyEmailPage", () => {
       message: "Email verified successfully!",
     });
 
-    renderWithRouter("valid-token-123");
+    renderPage("valid-token-123");
 
     await waitFor(() => {
       expect(screen.getByText(/You're all set!/i)).toBeInTheDocument();
@@ -53,19 +46,17 @@ describe("VerifyEmailPage", () => {
   });
 
   it("shows error state when API call fails", async () => {
-    const error = new AxiosError();
-
-    error.response = {
+    const error = new AxiosError("Error", "400", undefined, undefined, {
       data: { message: "Invalid or expired verification token" },
       status: 400,
       statusText: "Bad Request",
       headers: {},
       config: {} as InternalAxiosRequestConfig,
-    };
+    });
 
     (authService.verifyEmail as Mock).mockRejectedValue(error);
 
-    renderWithRouter("invalid-token");
+    renderPage("invalid-token");
 
     await waitFor(() => {
       expect(screen.getByText(/Verification Failed/i)).toBeInTheDocument();

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
+import { useMutation } from "@tanstack/react-query";
+
 import {
   Loader2,
   Mail,
@@ -34,12 +36,17 @@ import { authService } from "../../services/auth.service";
 
 export function SignupForm() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
+  const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const signupMutation = useMutation({
+    mutationFn: (data: SignupFormValues) => authService.signup(data),
+    onSuccess: () => {
+      setSuccess(true);
+    },
+  });
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -51,24 +58,24 @@ export function SignupForm() {
     },
   });
 
-  async function onSubmit(data: SignupFormValues) {
-    setIsLoading(true);
-    setServerError(null);
-
-    try {
-      await authService.signup(data);
-      setSuccess(true);
-    } catch (error) {
-      let message = "Something went wrong. Please try again.";
-      if (error instanceof AxiosError && error.response?.data?.message)
-        message = error.response.data.message;
-      else if (error instanceof Error) message = error.message;
-
-      setServerError(message);
-    } finally {
-      setIsLoading(false);
-    }
+  function onSubmit(data: SignupFormValues) {
+    signupMutation.mutate(data);
   }
+
+  const getErrorMessage = () => {
+    if (!signupMutation.error) return null;
+
+    if (signupMutation.error instanceof AxiosError) {
+      return (
+        signupMutation.error.response?.data?.message ||
+        "Something went wrong. Please try again."
+      );
+    }
+
+    return signupMutation.error instanceof Error
+      ? signupMutation.error.message
+      : "An unexpected error occurred.";
+  };
 
   if (success) {
     return (
@@ -248,18 +255,18 @@ export function SignupForm() {
           )}
         />
 
-        {serverError && (
+        {signupMutation.isError && (
           <div className="animate-in fade-in slide-in-from-top-2 border-destructive/20 bg-destructive/10 text-destructive mb-2 rounded-xl border p-3 text-center text-sm font-medium">
-            {serverError}
+            {getErrorMessage()}
           </div>
         )}
 
         <Button
           className="text-primary-foreground shadow-primary/20 dark:bg-primary hover:bg-primary/90 mt-6 h-12 w-full cursor-pointer rounded-xl bg-indigo-600 text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]"
           type="submit"
-          disabled={isLoading}
+          disabled={signupMutation.isPending}
         >
-          {isLoading ? (
+          {signupMutation.isPending ? (
             <>
               <Loader2 className="mr-3 h-5 w-5 animate-spin" />
               Creating account...

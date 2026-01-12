@@ -1,26 +1,38 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 import { authService } from "../../services/auth.service";
 import * as AuthContext from "@/hooks/useAuth";
-import { MemoryRouter } from "react-router";
+import { renderWithProviders } from "@/test/utils";
+import { type User } from "@/features/auth/types/types";
 
-// Mocks globaux
+const mockUserData = {
+  id: 1,
+  email: "test@example.com",
+  name: "John Doe",
+  role: "USER",
+};
+
+// Mock des services
 vi.mock("../../services/auth.service");
-
 vi.mock("sonner", () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("@/hooks/useUser", () => ({
+  useUser: () => ({
+    data: mockUserData,
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
 }));
 
 describe("SettingsPage", () => {
   const mockLogin = vi.fn();
   const mockLogout = vi.fn();
-
-  const mockUser = {
+  const mockUser: User = {
     id: 1,
     email: "test@example.com",
     name: "John Doe",
@@ -29,7 +41,7 @@ describe("SettingsPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
+    // Mock de useAuth (Context/Zustand)
     vi.spyOn(AuthContext, "useAuth").mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
@@ -39,35 +51,29 @@ describe("SettingsPage", () => {
     });
   });
 
-  const renderWithRouter = (ui: React.ReactNode) => {
-    return render(<MemoryRouter>{ui}</MemoryRouter>);
-  };
-
-  it("should render user information correctly", () => {
-    renderWithRouter(<SettingsPage />);
+  it("should render user information correctly", async () => {
+    renderWithProviders(<SettingsPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Settings" }),
+      await screen.findByRole("heading", { name: "Settings" }),
     ).toBeInTheDocument();
 
     const emailInput = screen.getByDisplayValue("test@example.com");
     expect(emailInput).toBeDisabled();
-
     expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
   });
 
   it("should update profile successfully", async () => {
     const user = userEvent.setup();
-
     vi.mocked(authService.updateProfile).mockResolvedValue({
       status: "success",
       message: "Profile updated successfully",
       data: { user: { ...mockUser, name: "Jane Doe" } },
     });
 
-    renderWithRouter(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
+    const nameInput = await screen.findByDisplayValue("John Doe");
 
-    const nameInput = screen.getByDisplayValue("John Doe");
     await user.clear(nameInput);
     await user.type(nameInput, "Jane Doe");
 
@@ -83,8 +89,9 @@ describe("SettingsPage", () => {
 
   it("should validate password matching", async () => {
     const user = userEvent.setup();
-    renderWithRouter(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
+    await screen.findByRole("heading", { name: "Settings" });
     await user.type(screen.getByTestId("current-password"), "password123");
     await user.type(screen.getByTestId("new-password"), "newpassword123");
     await user.type(
@@ -98,18 +105,18 @@ describe("SettingsPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
     });
-
     expect(authService.updatePassword).not.toHaveBeenCalled();
   });
 
   it("should delete account after confirmation", async () => {
     const user = userEvent.setup();
-
     vi.mocked(authService.deleteAccount).mockResolvedValue(undefined);
 
-    renderWithRouter(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
 
-    const deleteBtn = screen.getByRole("button", { name: /delete account/i });
+    const deleteBtn = await screen.findByRole("button", {
+      name: /delete account/i,
+    });
     await user.click(deleteBtn);
 
     expect(screen.getByText(/are you absolutely sure/i)).toBeInTheDocument();
@@ -117,7 +124,6 @@ describe("SettingsPage", () => {
     const confirmBtn = screen.getByRole("button", {
       name: "Yes, delete my account",
     });
-
     await user.click(confirmBtn);
 
     await waitFor(() => {

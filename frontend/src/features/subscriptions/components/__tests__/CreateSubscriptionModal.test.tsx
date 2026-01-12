@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 import { CreateSubscriptionModal } from "../CreateSubscriptionModal";
 import { subscriptionService } from "../../services/subscription.service";
 import { Category, Frequency } from "../../types/types";
+import { renderWithProviders } from "@/test/utils";
 
 vi.mock("sonner", () => ({
   toast: {
@@ -28,7 +29,7 @@ describe("CreateSubscriptionModal", () => {
   });
 
   it("renders correctly when open", () => {
-    render(
+    renderWithProviders(
       <CreateSubscriptionModal
         isOpen={true}
         onClose={mockOnClose}
@@ -43,7 +44,7 @@ describe("CreateSubscriptionModal", () => {
 
   it("shows validation errors for invalid inputs", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <CreateSubscriptionModal
         isOpen={true}
         onClose={mockOnClose}
@@ -63,7 +64,6 @@ describe("CreateSubscriptionModal", () => {
       expect(
         screen.getByText(/must be at least 2 characters/i),
       ).toBeInTheDocument();
-
       expect(
         screen.getByText(/Price must be greater than 0/i),
       ).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe("CreateSubscriptionModal", () => {
       data: { subscription: { id: 1, name: "Netflix" } },
     });
 
-    render(
+    renderWithProviders(
       <CreateSubscriptionModal
         isOpen={true}
         onClose={mockOnClose}

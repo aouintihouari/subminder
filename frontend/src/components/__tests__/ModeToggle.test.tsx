@@ -1,49 +1,37 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ModeToggle } from "../mode-toggle";
-import { ThemeProvider } from "@/context/ThemeProvider";
+
+const mockSetTheme = vi.fn();
+
+vi.mock("@/hooks/useTheme", () => ({
+  useTheme: () => ({ setTheme: mockSetTheme }),
+}));
 
 describe("ModeToggle", () => {
-  const renderWithTheme = () => {
-    return render(
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme-test">
-        <ModeToggle />
-      </ThemeProvider>,
-    );
-  };
-
   beforeEach(() => {
-    localStorage.clear();
-    document.documentElement.classList.remove("light", "dark");
+    vi.clearAllMocks();
   });
 
-  it("changes theme to dark when selected", async () => {
+  it("renders the toggle button", () => {
+    render(<ModeToggle />);
+    expect(
+      screen.getByRole("button", { name: /toggle theme/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens menu and changes theme", async () => {
     const user = userEvent.setup();
-    renderWithTheme();
+    render(<ModeToggle />);
 
     const triggerBtn = screen.getByRole("button", { name: /toggle theme/i });
     await user.click(triggerBtn);
 
     const darkOption = screen.getByText("Dark");
+    expect(darkOption).toBeInTheDocument();
+
     await user.click(darkOption);
-
-    expect(document.documentElement).toHaveClass("dark");
-    expect(localStorage.getItem("vite-ui-theme-test")).toBe("dark");
-  });
-
-  it("changes theme to light when selected", async () => {
-    const user = userEvent.setup();
-    document.documentElement.classList.add("dark");
-    renderWithTheme();
-
-    const triggerBtn = screen.getByRole("button", { name: /toggle theme/i });
-    await user.click(triggerBtn);
-
-    const lightOption = screen.getByText("Light");
-    await user.click(lightOption);
-
-    expect(document.documentElement).toHaveClass("light");
-    expect(localStorage.getItem("vite-ui-theme-test")).toBe("light");
+    expect(mockSetTheme).toHaveBeenCalledWith("dark");
   });
 });

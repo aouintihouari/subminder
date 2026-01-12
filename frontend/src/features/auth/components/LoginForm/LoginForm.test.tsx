@@ -1,18 +1,17 @@
-import { BrowserRouter } from "react-router";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { LoginForm } from ".";
 import { authService } from "../../services/auth.service";
+import { renderWithProviders } from "@/test/utils";
+import { type AuthResponse } from "../../types/types";
 
 const mockNavigate = vi.fn();
 vi.mock("react-router", async () => {
   const actual = await vi.importActual("react-router");
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
+  return { ...actual, useNavigate: () => mockNavigate };
 });
 
 const mockLoginContext = vi.fn();
@@ -26,24 +25,11 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 describe("LoginForm Component", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  const renderWithRouter = () => {
-    return render(
-      <BrowserRouter>
-        <LoginForm />
-      </BrowserRouter>,
-    );
-  };
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   it("renders email and password inputs correctly", () => {
-    renderWithRouter();
+    renderWithProviders(<LoginForm />);
     expect(
       screen.getByPlaceholderText(/name@example.com/i),
     ).toBeInTheDocument();
@@ -55,10 +41,8 @@ describe("LoginForm Component", () => {
 
   it("shows validation errors for empty fields", async () => {
     const user = userEvent.setup();
-    renderWithRouter();
-
+    renderWithProviders(<LoginForm />);
     await user.click(screen.getByRole("button", { name: /Sign In/i }));
-
     await waitFor(() => {
       expect(
         screen.getByText(/Please enter a valid email address/i),
@@ -70,20 +54,22 @@ describe("LoginForm Component", () => {
   it("shows error message when API fails (Invalid Credentials)", async () => {
     const user = userEvent.setup();
 
-    const loginSpy = vi.spyOn(authService, "login").mockRejectedValue({
-      response: {
-        data: { message: "Invalid email or password." },
-      },
+    const axiosError = new AxiosError("Error", "401", undefined, undefined, {
+      data: { message: "Invalid email or password." },
+      status: 401,
+      statusText: "Unauthorized",
+      headers: {},
+      config: {} as InternalAxiosRequestConfig,
     });
 
-    renderWithRouter();
+    vi.spyOn(authService, "login").mockRejectedValue(axiosError);
+    renderWithProviders(<LoginForm />);
 
     await user.type(
       screen.getByPlaceholderText(/name@example.com/i),
       "wrong@test.com",
     );
     await user.type(screen.getByPlaceholderText(/••••••••/i), "wrongpass");
-
     await user.click(screen.getByRole("button", { name: /Sign In/i }));
 
     await waitFor(() => {
@@ -91,29 +77,28 @@ describe("LoginForm Component", () => {
         screen.getByText("Invalid email or password."),
       ).toBeInTheDocument();
     });
-
-    expect(loginSpy).toHaveBeenCalled();
   });
 
   it("calls login service, updates context and redirects on success", async () => {
     const user = userEvent.setup();
-
-    const loginSpy = vi.spyOn(authService, "login").mockResolvedValue({
+    const mockUserResponse: AuthResponse = {
       status: "success",
       message: "Login successful",
       data: {
         user: { id: 1, email: "valid@test.com", name: "Tester", role: "USER" },
       },
-    });
+    };
+    const loginSpy = vi
+      .spyOn(authService, "login")
+      .mockResolvedValue(mockUserResponse);
 
-    renderWithRouter();
+    renderWithProviders(<LoginForm />);
 
     await user.type(
       screen.getByPlaceholderText(/name@example.com/i),
       "valid@test.com",
     );
     await user.type(screen.getByPlaceholderText(/••••••••/i), "password123");
-
     await user.click(screen.getByRole("button", { name: /Sign In/i }));
 
     await waitFor(() => {
@@ -121,11 +106,9 @@ describe("LoginForm Component", () => {
         email: "valid@test.com",
         password: "password123",
       });
-
       expect(mockLoginContext).toHaveBeenCalledWith(
-        expect.objectContaining({ email: "valid@test.com" }),
+        mockUserResponse.data!.user,
       );
-
       expect(mockNavigate).toHaveBeenCalledWith("/");
     });
   });

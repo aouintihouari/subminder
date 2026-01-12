@@ -1,51 +1,74 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import { MemoryRouter } from "react-router";
+import { PublicLayout } from "@/layouts/PublicLayout";
 import { AuthPage } from "../AuthPage";
+import { useAuth } from "@/hooks/useAuth";
+import { MemoryRouter, Route, Routes } from "react-router";
+import { type User } from "@/features/auth/types/types";
 
+vi.mock("@/hooks/useAuth");
 vi.mock("../../components/LoginForm", () => ({
-  LoginForm: () => <div data-testid="login-form">Mock Login Form</div>,
+  LoginForm: () => <div>Login Form</div>,
+}));
+vi.mock("../../components/SignupForm", () => ({
+  SignupForm: () => <div>Signup Form</div>,
 }));
 
-vi.mock("../../components/SignupForm", () => ({
-  SignupForm: () => <div data-testid="signup-form">Mock Signup Form</div>,
-}));
+const useAuthMock = vi.mocked(useAuth);
 
 describe("AuthPage", () => {
-  it("renders login tab by default", () => {
+  const createMockAuth = (isAuthenticated: boolean) => ({
+    isAuthenticated,
+    user: isAuthenticated
+      ? ({ id: 1, email: "test@test.com", name: "User", role: "USER" } as User)
+      : null,
+    isLoading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    checkAuth: vi.fn(),
+  });
+
+  it("renders Login form by default", () => {
+    useAuthMock.mockReturnValue(createMockAuth(false));
+
     render(
       <MemoryRouter initialEntries={["/auth"]}>
-        <AuthPage />
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
+        </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("SubMinder")).toBeInTheDocument();
-    expect(screen.getByTestId("login-form")).toBeInTheDocument();
+    expect(screen.getByText("Login Form")).toBeInTheDocument();
   });
 
-  it("renders signup tab based on URL query param", () => {
+  it("renders Signup form when tab is signup", () => {
+    useAuthMock.mockReturnValue(createMockAuth(false));
+
     render(
       <MemoryRouter initialEntries={["/auth?tab=signup"]}>
-        <AuthPage />
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
+        </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("signup-form")).toBeVisible();
+    expect(screen.getByText("Signup Form")).toBeInTheDocument();
   });
 
-  it("switches tabs when clicking triggers", async () => {
-    const user = userEvent.setup(); // 👈 Setup userEvent
+  it("redirects to dashboard if authenticated", () => {
+    useAuthMock.mockReturnValue(createMockAuth(true));
     render(
       <MemoryRouter initialEntries={["/auth"]}>
-        <AuthPage />
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/auth" element={<AuthPage />} />
+          </Route>
+          <Route path="/" element={<div>Dashboard Page</div>} />
+        </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("login-form")).toBeVisible();
-    const signupTab = screen.getByRole("tab", { name: /Sign Up/i });
-
-    await user.click(signupTab);
-    expect(await screen.findByTestId("signup-form")).toBeVisible();
+    expect(screen.getByText("Dashboard Page")).toBeInTheDocument();
   });
 });

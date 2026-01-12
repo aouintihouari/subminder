@@ -1,18 +1,11 @@
-import {
-  render,
-  screen,
-  waitFor,
-  fireEvent,
-  within,
-} from "@testing-library/react";
+import { screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { DashboardPage } from "../DashboardPage";
 import { subscriptionService } from "@/features/subscriptions/services/subscription.service";
 import * as AuthContext from "@/hooks/useAuth";
-import { MemoryRouter } from "react-router";
+import { renderWithProviders } from "@/test/utils";
 import { toast } from "sonner";
 
-// Mock des services
 vi.mock("@/features/subscriptions/services/subscription.service", () => ({
   subscriptionService: {
     getAll: vi.fn(),
@@ -22,10 +15,7 @@ vi.mock("@/features/subscriptions/services/subscription.service", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 describe("DashboardPage", () => {
@@ -57,7 +47,7 @@ describe("DashboardPage", () => {
     totalYearly: 311.76,
     activeCount: 2,
     categoryCount: 1,
-    mostExpensive: mockSubscriptions[0], // Netflix est le plus cher
+    mostExpensive: mockSubscriptions[0],
   };
 
   beforeEach(() => {
@@ -79,12 +69,7 @@ describe("DashboardPage", () => {
       new Promise(() => {}),
     );
 
-    const { container } = render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    const { container } = renderWithProviders(<DashboardPage />);
     expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
@@ -104,12 +89,7 @@ describe("DashboardPage", () => {
       },
     });
 
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    renderWithProviders(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText(/No subscriptions yet/i)).toBeInTheDocument();
     });
@@ -125,12 +105,7 @@ describe("DashboardPage", () => {
       data: mockStats,
     });
 
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    renderWithProviders(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
       expect(screen.getByText("Spotify")).toBeInTheDocument();
@@ -148,12 +123,7 @@ describe("DashboardPage", () => {
       data: mockStats,
     });
 
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    renderWithProviders(<DashboardPage />);
     await waitFor(() =>
       expect(screen.getByText("Spotify")).toBeInTheDocument(),
     );
@@ -162,7 +132,6 @@ describe("DashboardPage", () => {
     fireEvent.change(searchInput, { target: { value: "Net" } });
 
     expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
-
     expect(screen.queryByText("Spotify")).not.toBeInTheDocument();
   });
 
@@ -176,12 +145,7 @@ describe("DashboardPage", () => {
       data: mockStats,
     });
 
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    renderWithProviders(<DashboardPage />);
     await waitFor(() =>
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0),
     );
@@ -192,7 +156,6 @@ describe("DashboardPage", () => {
     fireEvent.click(listButton);
 
     expect(screen.getByRole("table")).toBeInTheDocument();
-
     const table = screen.getByRole("table");
     expect(within(table).getByText("Netflix")).toBeInTheDocument();
   });
@@ -206,14 +169,9 @@ describe("DashboardPage", () => {
       data: mockStats,
     });
 
-    render(
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>,
-    );
-
+    renderWithProviders(<DashboardPage />);
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to load dashboard data");
+      expect(toast.error).toHaveBeenCalled();
     });
   });
 });

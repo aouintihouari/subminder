@@ -8,9 +8,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatCurrency, formatDate } from "@/utils/formatters";
+import { formatCurrency } from "@/utils/formatters";
 import { type Subscription } from "../types/types";
 import { categoryStyles, accentStyles } from "../config/categoryStyles";
+import { getNextPaymentDate, formatNextPayment } from "@/utils/dates";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -23,12 +24,21 @@ export function SubscriptionCard({
   onEdit,
   onDelete,
 }: SubscriptionCardProps) {
+  const nextPayment = getNextPaymentDate(
+    subscription.startDate,
+    subscription.frequency,
+  );
+
+  const isUrgent =
+    nextPayment &&
+    new Date(nextPayment).getTime() - new Date().getTime() <
+      3 * 24 * 60 * 60 * 1000;
+
   return (
     <Card className="group border-border bg-card relative flex h-full flex-col gap-0 overflow-hidden border py-0 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/5">
       <div
         className={`absolute top-0 left-0 transition-opacity ${accentStyles[subscription.category]} h-1 w-full sm:h-full sm:w-1`}
       />
-
       <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pl-4 sm:pl-5">
         <div className="flex flex-col gap-1.5 overflow-hidden">
           <CardTitle className="text-foreground truncate text-base leading-tight font-bold">
@@ -65,7 +75,6 @@ export function SubscriptionCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-
       <CardContent className="flex flex-1 flex-col p-4 pt-0 pl-4 sm:pl-5">
         <div className="mb-3">
           <span className="text-foreground text-xl font-extrabold tracking-tight sm:text-2xl">
@@ -82,17 +91,25 @@ export function SubscriptionCard({
                   : "mo"}
           </span>
         </div>
-
         <div className="border-border mt-auto flex flex-col gap-2 border-t pt-3">
           {subscription.description && (
             <p className="text-muted-foreground line-clamp-2 text-xs leading-normal">
               {subscription.description}
             </p>
           )}
-
-          <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-            <Calendar className="text-muted-foreground/70 h-3.5 w-3.5" />
-            <span>Next: {formatDate(subscription.startDate)}</span>
+          <div
+            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+              isUrgent
+                ? "text-orange-600 dark:text-orange-400"
+                : "text-muted-foreground"
+            }`}
+          >
+            <Calendar className="h-3.5 w-3.5 opacity-70" />
+            <span>
+              {subscription.frequency === "ONCE"
+                ? "One-time payment"
+                : `Next: ${formatNextPayment(nextPayment)}`}
+            </span>
           </div>
         </div>
       </CardContent>
