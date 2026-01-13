@@ -3,6 +3,8 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+
+const apiTarget = process.env.VITE_API_TARGET || 'http://127.0.0.1:8000';
 // FORCE UPDATE VITE CONFIG
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,7 +19,7 @@ export default defineConfig({
     host: true,
     watch: { usePolling: true },
     proxy: {
-      "/api": { target: "http://api:8000", changeOrigin: true, secure: false },
+      "/api": { target: apiTarget, changeOrigin: true, secure: false },
     },
   },
   test: {
