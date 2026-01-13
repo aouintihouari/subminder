@@ -1,7 +1,7 @@
 import { DashboardStats } from "../components/DashboardStats";
 import { DashboardToolbar } from "../components/DashboardToolbar";
 import { useDashboard } from "../../../hooks/useDashboard";
-
+import { type Subscription } from "@/features/subscriptions/types/types";
 import { SubscriptionCard } from "@/features/subscriptions/components/SubscriptionCard";
 import { CreateSubscriptionModal } from "@/features/subscriptions/components/CreateSubscriptionModal";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ export function DashboardPage() {
             </div>
           ) : uiState.viewMode === "grid" ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {subscriptions.map((sub) => (
+              {subscriptions.map((sub: Subscription) => (
                 <SubscriptionCard
                   key={sub.id}
                   subscription={sub}
@@ -146,7 +146,7 @@ export function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscriptions.map((sub) => (
+                  {subscriptions.map((sub: Subscription) => (
                     <TableRow key={sub.id} className="hover:bg-muted/50">
                       <TableCell className="text-foreground font-medium">
                         <div className="flex flex-col gap-1">
