@@ -40,7 +40,12 @@ describe("Protect Middleware", () => {
 
     (jwt.verify as jest.Mock).mockReturnValue({ id: 1 });
 
-    const mockUser = { id: 1, email: "test@test.com", role: "USER" };
+    const mockUser = {
+      id: 1,
+      email: "test@test.com",
+      role: "USER",
+      preferredCurrency: "USD",
+    };
     prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
     await protect(req as Request, res as Response, next);
@@ -48,8 +53,15 @@ describe("Protect Middleware", () => {
     expect(jwt.verify).toHaveBeenCalled();
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
       where: { id: 1 },
-      select: { id: true, email: true, name: true, role: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        preferredCurrency: true,
+      },
     });
+
     expect((req as any).user).toEqual(mockUser);
     expect(next).toHaveBeenCalledWith();
   });
