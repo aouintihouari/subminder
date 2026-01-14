@@ -85,7 +85,13 @@ describe("LoginForm Component", () => {
       status: "success",
       message: "Login successful",
       data: {
-        user: { id: 1, email: "valid@test.com", name: "Tester", role: "USER" },
+        user: {
+          id: 1,
+          email: "valid@test.com",
+          name: "Tester",
+          role: "USER",
+          preferredCurrency: "USD",
+        },
       },
     };
     const loginSpy = vi

@@ -34,6 +34,7 @@ describe("useAuth Hook", () => {
       email: "test@test.com",
       name: "Test",
       role: "USER",
+      preferredCurrency: "USD",
     };
 
     act(() => {
@@ -50,6 +51,7 @@ describe("useAuth Hook", () => {
       email: "test@test.com",
       name: "Test",
       role: "USER",
+      preferredCurrency: "USD",
     } as User;
 
     useAuthStore.setState({

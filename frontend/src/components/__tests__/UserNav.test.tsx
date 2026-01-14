@@ -22,6 +22,7 @@ describe("UserNav Component", () => {
     email: "test@subminder.com",
     name: "Alex Dev",
     role: "USER",
+    preferredCurrency: "USD",
   };
 
   beforeEach(() => {
