@@ -1,4 +1,5 @@
 import { subscriptionService } from "./subscription.service";
+import { exchangeRateService } from "./exchangeRate.service";
 import { emailService } from "./email.service";
 import { isRenewalDue } from "../utils/scheduler.utils";
 
@@ -44,6 +45,16 @@ export class CronService {
       console.log(`✅ Cron Job finished. ${sentCount} reminders sent.`);
     } catch (error) {
       console.error("💥 Cron Job Critical Error:", error);
+    }
+  }
+
+  public async handleDailyRatesUpdate() {
+    try {
+      console.log("💱 Starting daily exchange rate update...");
+      await exchangeRateService.updateRates();
+      console.log("✅ Daily exchange rate update completed.");
+    } catch (error) {
+      console.error("❌ Failed to update daily rates:", error);
     }
   }
 }

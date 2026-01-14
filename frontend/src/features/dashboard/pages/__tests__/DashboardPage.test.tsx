@@ -48,12 +48,19 @@ describe("DashboardPage", () => {
     activeCount: 2,
     categoryCount: 1,
     mostExpensive: mockSubscriptions[0],
+    currency: "USD",
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(AuthContext, "useAuth").mockReturnValue({
-      user: { id: 1, email: "test@test.com", name: "Test", role: "USER" },
+      user: {
+        id: 1,
+        email: "test@test.com",
+        name: "Test",
+        role: "USER",
+        preferredCurrency: "USD",
+      },
       isAuthenticated: true,
       isLoading: false,
       login: vi.fn(),
@@ -86,6 +93,7 @@ describe("DashboardPage", () => {
         activeCount: 0,
         categoryCount: 0,
         mostExpensive: null,
+        currency: "USD",
       },
     });
 
@@ -109,7 +117,7 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getAllByText("Netflix").length).toBeGreaterThan(0);
       expect(screen.getByText("Spotify")).toBeInTheDocument();
-      expect(screen.getByText("€25.98")).toBeInTheDocument();
+      expect(screen.getByText("$25.98")).toBeInTheDocument();
     });
   });
 

@@ -4,13 +4,19 @@ import { updateProfileSchema, updatePasswordSchema } from "../settings.schema";
 describe("Settings Schemas", () => {
   describe("updateProfileSchema", () => {
     it("validates valid name", () => {
-      expect(updateProfileSchema.safeParse({ name: "Alex" }).success).toBe(
-        true,
-      );
+      expect(
+        updateProfileSchema.safeParse({
+          name: "Alex",
+          preferredCurrency: "USD",
+        }).success,
+      ).toBe(true);
     });
 
     it("rejects too short name", () => {
-      expect(updateProfileSchema.safeParse({ name: "A" }).success).toBe(false);
+      expect(
+        updateProfileSchema.safeParse({ name: "A", preferredCurrency: "USD" })
+          .success,
+      ).toBe(false);
     });
   });
 

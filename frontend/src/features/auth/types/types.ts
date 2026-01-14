@@ -3,6 +3,12 @@ export interface User {
   email: string;
   name: string | null;
   role: string;
+  preferredCurrency: string;
+}
+
+export interface UpdateProfileDTO {
+  name?: string;
+  preferredCurrency?: string;
 }
 
 export interface AuthResponse {
@@ -12,8 +18,10 @@ export interface AuthResponse {
   data?: { user: User };
 }
 
-export interface UpdateProfileDTO {
-  name: string;
+export interface UpdatePasswordDTO {
+  currentPassword: string;
+  newPassword: string;
+  passwordConfirm: string;
 }
 
 export interface UpdatePasswordDTO {

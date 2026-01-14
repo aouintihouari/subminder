@@ -103,7 +103,10 @@ export function useDashboard() {
         return matchesSearch && matchesCategory;
       })
       .sort((a: Subscription, b: Subscription) => {
-        return sortOrder === "desc" ? b.price - a.price : a.price - b.price;
+        const priceA = a.convertedPrice ?? a.price;
+        const priceB = b.convertedPrice ?? b.price;
+
+        return sortOrder === "desc" ? priceB - priceA : priceA - priceB;
       });
   }, [subscriptions, searchQuery, categoryFilter, sortOrder]);
 

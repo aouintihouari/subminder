@@ -13,6 +13,7 @@ import userRoutes from "./routes/user.routes";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import { AppError } from "./utils/AppError";
 import { cronService } from "./services/cron.service";
+import { exchangeRateService } from "./services/exchangeRate.service";
 
 const app: Application = express();
 
@@ -35,12 +36,24 @@ app.get("/", (_: Request, res: Response) => {
   });
 });
 
+cron.schedule("0 8 * * *", () => {
+  cronService.handleDailyRatesUpdate();
+});
+
 cron.schedule("0 9 * * *", () => {
   console.log("⏰ Triggering Daily Renewal Check...");
   cronService.checkUpcomingRenewals();
 });
 
 console.log("✅ Scheduler initialized: Job set for 09:00 AM daily.");
+console.log("✅ Scheduler initialized: Rates at 08:00, Renewals at 09:00.");
+
+exchangeRateService
+  .getRates()
+  .then(() => console.log("💰 Initial exchange rates loaded"))
+  .catch((err) =>
+    console.error("⚠️ Failed to load initial rates:", err.message)
+  );
 
 app.all("*", (req: Request, _: Response) => {
   throw new AppError(`Route ${req.originalUrl} not found`, 404);

@@ -12,9 +12,9 @@ const mockUserData = {
   email: "test@example.com",
   name: "John Doe",
   role: "USER",
+  preferredCurrency: "USD",
 };
 
-// Mock des services
 vi.mock("../../services/auth.service");
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -37,11 +37,11 @@ describe("SettingsPage", () => {
     email: "test@example.com",
     name: "John Doe",
     role: "USER",
+    preferredCurrency: "USD",
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock de useAuth (Context/Zustand)
     vi.spyOn(AuthContext, "useAuth").mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
@@ -83,6 +83,7 @@ describe("SettingsPage", () => {
     await waitFor(() => {
       expect(authService.updateProfile).toHaveBeenCalledWith({
         name: "Jane Doe",
+        preferredCurrency: "USD",
       });
     });
   });

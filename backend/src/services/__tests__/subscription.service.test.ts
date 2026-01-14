@@ -1,30 +1,48 @@
 import { mockReset, mockDeep } from "jest-mock-extended";
 import { PrismaClient, Frequency, Category } from "@prisma/client";
 import { SubscriptionService } from "../subscription.service";
+import { exchangeRateService } from "../exchangeRate.service";
 
 const prismaMock = mockDeep<PrismaClient>();
+
+jest.mock("../exchangeRate.service");
 
 const subscriptionService = new SubscriptionService(prismaMock);
 
 describe("SubscriptionService", () => {
   beforeEach(() => {
     mockReset(prismaMock);
+    jest.clearAllMocks();
+
+    (exchangeRateService.getRates as jest.Mock).mockResolvedValue({
+      USD: 1,
+      EUR: 1,
+    });
   });
 
   describe("createSubscription", () => {
     it("should create a monthly and yearly totals correctly", async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 1,
+        preferredCurrency: "EUR",
+      } as any);
+
       const mockSubs = [
         {
           id: 1,
           price: 10,
           frequency: Frequency.MONTHLY,
           category: Category.ENTERTAINMENT,
+          currency: "EUR",
+          isActive: true,
         },
         {
           id: 2,
           price: 120,
           frequency: Frequency.YEARLY,
           category: Category.HEALTH,
+          currency: "EUR",
+          isActive: true,
         },
       ];
 
@@ -37,6 +55,11 @@ describe("SubscriptionService", () => {
     });
 
     it("should handle empty subscriptions", async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 1,
+        preferredCurrency: "EUR",
+      } as any);
+
       prismaMock.subscription.findMany.mockResolvedValue([]);
 
       const stats = await subscriptionService.getStats(1);

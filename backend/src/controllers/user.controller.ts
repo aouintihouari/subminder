@@ -4,8 +4,11 @@ import { updateMeSchema, updatePasswordSchema } from "../schemas/userSchema";
 
 export const updateMe = async (req: Request, res: Response) => {
   const validated = updateMeSchema.parse({ body: req.body });
-  const { name } = validated.body;
-  const updatedUser = await userService.updateProfile(req.user!.id, { name });
+  const { name, preferredCurrency } = validated.body;
+  const updatedUser = await userService.updateProfile(req.user!.id, {
+    name,
+    preferredCurrency,
+  });
 
   res.status(200).json({ status: "success", data: { user: updatedUser } });
 };

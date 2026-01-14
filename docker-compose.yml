@@ -16,6 +16,26 @@ services:
       - subminder-network
     restart: always
 
+  # --- SERVICE REDIS (Avec Persistance) ---
+  redis:
+    image: redis:alpine
+    container_name: subminder_redis
+    # Activation du mode persistant (AOF - Append Only File)
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      # Montage du volume pour que les données survivent au redémarrage
+      - redis_data:/data
+    networks:
+      - subminder-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: ./backend
@@ -32,8 +52,11 @@ services:
       - DATABASE_URL=postgresql://user123:password123@db:5432/subminder_db?schema=public
       - DIRECT_URL=postgresql://user123:password123@db:5432/subminder_db?schema=public
       - FRONTEND_URL=http://localhost:3000
+      # Connection à Redis via le nom du service
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - db
+      - redis # Attend que Redis soit prêt
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -51,6 +74,7 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8000/api
+      - VITE_API_TARGET=http://api:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -61,6 +85,8 @@ services:
 
 volumes:
   postgres_data:
+  # Nouveau volume pour la persistance Redis
+  redis_data:
 
 networks:
   subminder-network:

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -26,11 +26,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
   Category,
   Frequency,
   type Subscription,
 } from "@/features/subscriptions/types/types";
+
 import { CalendarIcon, Sparkles, Loader2, Calendar } from "lucide-react";
+import { CURRENCIES } from "@/config/currencies";
 
 interface CreateSubscriptionModalProps {
   isOpen: boolean;
@@ -47,6 +57,21 @@ export function CreateSubscriptionModal({
 }: CreateSubscriptionModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!subscriptionToEdit;
+
+  const form = useForm<SubscriptionFormData>({
+    resolver: zodResolver(subscriptionSchema),
+    defaultValues: {
+      name: "",
+      price: 0,
+      currency: "EUR",
+      frequency: Frequency.MONTHLY,
+      category: Category.OTHER,
+      startDate: new Date().toISOString().split("T")[0],
+      description: "",
+    },
+  });
+
+  const { reset } = form;
 
   const createMutation = useMutation({
     mutationFn: (data: SubscriptionFormData & { startDate: string }) =>
@@ -72,29 +97,11 @@ export function CreateSubscriptionModal({
 
   const finalizeAction = () => {
     queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+
     onSuccess();
     onClose();
   };
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<SubscriptionFormData>({
-    resolver: zodResolver(subscriptionSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      currency: "EUR",
-      frequency: Frequency.MONTHLY,
-      category: Category.OTHER,
-      startDate: new Date().toISOString().split("T")[0],
-      description: "",
-    },
-  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,7 +110,8 @@ export function CreateSubscriptionModal({
       reset({
         name: subscriptionToEdit.name,
         price: subscriptionToEdit.price,
-        currency: subscriptionToEdit.currency as "EUR" | "USD" | "GBP",
+        currency:
+          subscriptionToEdit.currency as SubscriptionFormData["currency"],
         frequency: subscriptionToEdit.frequency,
         category: subscriptionToEdit.category,
         startDate: new Date(subscriptionToEdit.startDate)
@@ -115,7 +123,7 @@ export function CreateSubscriptionModal({
       reset({
         name: "",
         price: 0,
-        currency: "EUR" as const,
+        currency: "EUR",
         frequency: Frequency.MONTHLY,
         category: Category.OTHER,
         startDate: new Date().toISOString().split("T")[0],
@@ -130,18 +138,16 @@ export function CreateSubscriptionModal({
       startDate: new Date(data.startDate).toISOString(),
     };
 
-    if (isEditing && subscriptionToEdit) {
+    if (isEditing && subscriptionToEdit)
       updateMutation.mutate({ id: subscriptionToEdit.id, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
+    else createMutation.mutate(payload);
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="dark:bg-card overflow-hidden border-none bg-white p-0 shadow-2xl sm:max-w-125">
+      <DialogContent className="dark:bg-card overflow-hidden border-none bg-white p-0 shadow-2xl sm:max-w-md">
         <div className="dark:border-border border-b border-indigo-100/50 bg-linear-to-r from-indigo-50 to-violet-50 px-6 py-6 dark:from-indigo-950/30 dark:to-violet-950/30">
           <DialogHeader>
             <div className="mb-2 flex items-center gap-2">
@@ -164,173 +170,223 @@ export function CreateSubscriptionModal({
           </DialogHeader>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-6 py-6">
-          <div className="space-y-1">
-            <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-              Service Name
-            </label>
-            <Input
-              {...register("name")}
-              placeholder="Netflix, Spotify, Gym..."
-              className={`dark:border-border dark:bg-input/20 ${errors.name ? "border-red-500 focus:ring-red-200" : ""}`}
-            />
-            {errors.name && (
-              <p className="ml-1 text-xs font-medium text-red-500">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2 space-y-1">
-              <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-                Amount
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                {...register("price", { valueAsNumber: true })}
-                onFocus={(e) => e.target.select()}
-                className={`dark:border-border dark:bg-input/20 ${errors.price ? "border-red-500 focus:ring-red-200" : ""}`}
-              />
-              {errors.price && (
-                <p className="ml-1 text-xs font-medium text-red-500">
-                  {errors.price.message}
-                </p>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 px-6 py-6"
+          >
+            {/* NAME */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                    Service Name
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Netflix, Spotify..."
+                      {...field}
+                      className="dark:border-border dark:bg-input/20"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
 
-            <div className="space-y-1">
-              <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-                Currency
-              </label>
-              <Controller
+            <div className="grid grid-cols-2 gap-4">
+              {/* PRICE */}
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                      Price
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="9.99"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value))
+                        }
+                        className="dark:border-border dark:bg-input/20"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* CURRENCY */}
+              <FormField
+                control={form.control}
                 name="currency"
-                control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="dark:border-border dark:bg-input/20 cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                      Currency
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="dark:border-border dark:bg-input/20">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+
+                      {/* ✅ CORRECTION 2 : position="popper" + max-h-[200px] + overflow-y-auto */}
+                      <SelectContent
+                        position="popper"
+                        className="max-h-50 overflow-y-auto"
+                      >
+                        {CURRENCIES.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-                Frequency
-              </label>
-              <Controller
+            <div className="grid grid-cols-2 gap-4">
+              {/* FREQUENCY */}
+              <FormField
+                control={form.control}
                 name="frequency"
-                control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="dark:border-border dark:bg-input/20 w-full cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(Frequency).map((freq) => (
-                        <SelectItem key={freq} value={freq}>
-                          {freq.charAt(0) + freq.slice(1).toLowerCase()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                      Frequency
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="dark:border-border dark:bg-input/20">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(Frequency).map((freq) => (
+                          <SelectItem key={freq} value={freq}>
+                            {freq.charAt(0) + freq.slice(1).toLowerCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            </div>
 
-            <div className="space-y-1">
-              <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-                Category
-              </label>
-              <Controller
+              {/* CATEGORY */}
+              <FormField
+                control={form.control}
                 name="category"
-                control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="dark:border-border dark:bg-input/20 w-full cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(Category).map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat.charAt(0) + cat.slice(1).toLowerCase()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                      Category
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="dark:border-border dark:bg-input/20">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(Category).map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-              Start Date
-            </label>
-            <div className="group relative transition-all duration-200">
-              <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="date"
-                {...register("startDate")}
-                className={`dark:border-border dark:bg-input/20 cursor-pointer pl-9 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
-                  errors.startDate ? "border-red-500 focus:ring-red-200" : ""
-                }`}
-              />
-            </div>
-            {errors.startDate && (
-              <p className="ml-1 text-xs font-medium text-red-500">
-                {errors.startDate.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
-              Note (optional)
-            </label>
-            <Textarea
-              {...register("description")}
-              className="dark:border-border dark:bg-input/20 min-h-20"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="dark:border-border dark:text-foreground dark:hover:bg-accent cursor-pointer border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:bg-transparent"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-600"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : isEditing ? (
-                "Save Changes"
-              ) : (
-                "Create Subscription"
+            {/* START DATE */}
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                    Start Date
+                  </FormLabel>
+                  <div className="relative">
+                    <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        className="dark:border-border dark:bg-input/20 pl-9"
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
               )}
-            </Button>
-          </div>
-        </form>
+            />
+
+            {/* DESCRIPTION */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-muted-foreground ml-1 text-xs font-semibold text-gray-500 uppercase">
+                    Note (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="dark:border-border dark:bg-input/20 min-h-20"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="dark:border-border dark:text-foreground dark:hover:bg-accent cursor-pointer border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:bg-transparent"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-600"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : isEditing ? (
+                  "Save Changes"
+                ) : (
+                  "Create Subscription"
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -1,6 +1,11 @@
 import request from "supertest";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
+jest.mock("node-cron", () => ({
+  schedule: jest.fn(),
+}));
+
 import { prisma } from "../../lib/prisma";
 import app from "../../app";
 import { emailService } from "../../services/email.service";

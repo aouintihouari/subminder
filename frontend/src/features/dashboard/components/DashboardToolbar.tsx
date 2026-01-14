@@ -40,12 +40,8 @@ export function DashboardToolbar({
   onViewModeChange,
   onCreateClick,
 }: DashboardToolbarProps) {
-  // Mapping pour afficher les icônes de catégories si besoin,
-  // sinon on garde le texte simple comme dans ton code original.
-
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      {/* 1. Barre de Recherche */}
       <div className="relative w-full sm:w-[320px]">
         <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
         <Input
@@ -56,9 +52,7 @@ export function DashboardToolbar({
         />
       </div>
 
-      {/* 2. Filtres et Toggles */}
       <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-        {/* Filtre Catégorie */}
         <Select value={categoryFilter} onValueChange={onCategoryChange}>
           <SelectTrigger className="dark:border-border dark:bg-card dark:text-foreground h-10 w-full rounded-xl border-gray-200 bg-white shadow-sm outline-none focus:ring-1 focus:ring-indigo-500 sm:w-45">
             <div className="flex items-center gap-2 truncate">
@@ -85,7 +79,6 @@ export function DashboardToolbar({
           </SelectContent>
         </Select>
 
-        {/* Tri (Sort) */}
         <Select
           value={sortOrder}
           onValueChange={(val) => onSortChange(val as "asc" | "desc")}
@@ -112,10 +105,7 @@ export function DashboardToolbar({
           </SelectContent>
         </Select>
 
-        {/* Séparateur Vertical */}
         <div className="dark:bg-border hidden h-8 w-px bg-gray-200 sm:block"></div>
-
-        {/* View Toggle (Grid/List) */}
         <div className="dark:border-border dark:bg-card flex h-10 items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
           <button
             onClick={() => onViewModeChange("grid")}
@@ -140,8 +130,6 @@ export function DashboardToolbar({
             <List className="h-4 w-4" />
           </button>
         </div>
-
-        {/* Bouton Ajouter (Mobile seulement, optionnel car déjà en haut) */}
         <Button onClick={onCreateClick} className="w-full sm:hidden">
           <Plus className="mr-2 h-4 w-4" /> Add
         </Button>

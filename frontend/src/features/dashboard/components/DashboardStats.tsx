@@ -8,6 +8,7 @@ export interface DashboardStatsData {
   totalYearly: number;
   activeCount: number;
   categoryCount: number;
+  currency: string;
   mostExpensive: Subscription | null;
 }
 
@@ -16,7 +17,6 @@ interface DashboardStatsProps {
   isLoading?: boolean;
 }
 
-// Composant sorti pour la performance (Good practice ✅)
 const ValueSkeleton = () => (
   <div className="bg-muted h-8 w-24 animate-pulse rounded-md" />
 );
@@ -25,6 +25,8 @@ export function DashboardStats({
   stats,
   isLoading = false,
 }: DashboardStatsProps) {
+  const currencyCode = stats.currency || "USD";
+
   const cardClasses =
     "bg-card shadow-sm border-border/60 py-4 sm:py-6 gap-4 sm:gap-6 transition-all duration-200 hover:shadow-md";
   const headerClasses =
@@ -37,7 +39,6 @@ export function DashboardStats({
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {/* 1. MONTHLY */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -52,14 +53,13 @@ export function DashboardStats({
             {isLoading ? (
               <ValueSkeleton />
             ) : (
-              formatCurrency(stats.totalMonthly, "EUR")
+              formatCurrency(stats.totalMonthly, currencyCode)
             )}
           </div>
           <p className={subtitleClasses}>Recurring expenses</p>
         </CardContent>
       </Card>
 
-      {/* 2. YEARLY */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -74,14 +74,13 @@ export function DashboardStats({
             {isLoading ? (
               <ValueSkeleton />
             ) : (
-              formatCurrency(stats.totalYearly, "EUR")
+              formatCurrency(stats.totalYearly, currencyCode)
             )}
           </div>
           <p className={subtitleClasses}>Estimated cost</p>
         </CardContent>
       </Card>
 
-      {/* 3. ACTIVE */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
           <CardTitle className="text-muted-foreground text-sm font-medium">
@@ -101,10 +100,8 @@ export function DashboardStats({
         </CardContent>
       </Card>
 
-      {/* 4. HIGHEST (anciennement TOP) */}
       <Card className={cardClasses}>
         <CardHeader className={headerClasses}>
-          {/* 👇 Changement de Titre */}
           <CardTitle className="text-muted-foreground text-sm font-medium">
             Highest
           </CardTitle>
@@ -122,7 +119,6 @@ export function DashboardStats({
                   stats.mostExpensive.price,
                   stats.mostExpensive.currency,
                 )}
-                {/* 👇 Ajout de la fréquence ici */}
                 <span className="text-muted-foreground ml-1 text-sm font-normal">
                   /
                   {stats.mostExpensive.frequency === "ONCE"

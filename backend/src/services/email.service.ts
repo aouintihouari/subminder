@@ -11,6 +11,8 @@ interface EmailOptions {
 
 class EmailService {
   private resend: Resend | null = null;
+  private templatesPath = path.join(__dirname, "../templates");
+  private layoutPath = path.join(this.templatesPath, "email-layout.ejs");
 
   constructor() {
     if (process.env.RESEND_API_KEY)
@@ -19,6 +21,15 @@ class EmailService {
       console.warn(
         "⚠️ RESEND_API_KEY is missing. Emails will be logged in console only (Simulation Mode)."
       );
+  }
+
+  private async renderWithLayout(
+    templateName: string,
+    data: Record<string, any>
+  ): Promise<string> {
+    const templatePath = path.join(this.templatesPath, `${templateName}.ejs`);
+    const content = await ejs.renderFile(templatePath, data);
+    return ejs.renderFile(this.layoutPath, { body: content });
   }
 
   private async send(options: EmailOptions): Promise<void> {
@@ -30,12 +41,10 @@ class EmailService {
     }
 
     try {
-      const templatePath = path.join(
-        __dirname,
-        `../templates/${options.templateName}.ejs`
+      const html = await this.renderWithLayout(
+        options.templateName,
+        options.data
       );
-
-      const html = await ejs.renderFile(templatePath, options.data);
 
       const data = await this.resend.emails.send({
         from: process.env.EMAIL_FROM || "SubMinder <onboarding@resend.dev>",
@@ -64,7 +73,6 @@ class EmailService {
     token: string
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
     if (!this.resend)
       console.log("🔗 Manual Verification Link:", verificationUrl);
 
@@ -102,7 +110,6 @@ class EmailService {
     name: string
   ): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
     if (!this.resend)
       console.log("🔐 Reset Password Link (Simulated):", resetUrl);
 

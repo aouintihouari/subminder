@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   useForm,
   type ControllerRenderProps,
@@ -17,8 +17,8 @@ import {
   Save,
   Eye,
   EyeOff,
+  Coins,
 } from "lucide-react";
-import { useState } from "react";
 import { AxiosError } from "axios";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +30,7 @@ import {
   type UpdateProfileValues,
   type UpdatePasswordValues,
 } from "../schemas/settings.schema";
+import { CURRENCIES } from "@/config/currencies";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,11 +38,19 @@ import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -119,13 +128,14 @@ export function SettingsPage() {
     mutationFn: (data: UpdateProfileValues) => authService.updateProfile(data),
     onSuccess: (response) => {
       toast.success("Profile updated successfully");
-
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY });
-
       if (response.data?.user && user)
         login({ ...user, ...response.data.user });
 
-      profileForm.reset({ name: response.data?.user?.name ?? "" });
+      profileForm.reset({
+        name: response.data?.user?.name ?? "",
+        preferredCurrency: response.data?.user?.preferredCurrency ?? "USD",
+      });
     },
     onError: () => {
       toast.error("Failed to update profile");
@@ -162,11 +172,19 @@ export function SettingsPage() {
 
   const profileForm = useForm<UpdateProfileValues>({
     resolver: zodResolver(updateProfileSchema),
-    defaultValues: { name: "" },
+    defaultValues: {
+      name: "",
+      preferredCurrency: "USD",
+    },
   });
 
   useEffect(() => {
-    if (user) profileForm.reset({ name: user.name ?? "" });
+    if (user) {
+      profileForm.reset({
+        name: user.name ?? "",
+        preferredCurrency: user.preferredCurrency ?? "USD",
+      });
+    }
   }, [user, profileForm]);
 
   const passwordForm = useForm<UpdatePasswordValues>({
@@ -200,15 +218,14 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-6">
-        {/* PROFILE CARD */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-indigo-600" />
-              <CardTitle>Profile Information</CardTitle>
+              <CardTitle>Profile & Preferences</CardTitle>
             </div>
             <CardDescription>
-              Update your public display information.
+              Update your personal information and application preferences.
             </CardDescription>
           </CardHeader>
 
@@ -218,9 +235,9 @@ export function SettingsPage() {
                 onSubmit={profileForm.handleSubmit((data) =>
                   updateProfileMutation.mutate(data),
                 )}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Email Address</Label>
                     <div className="relative">
@@ -242,6 +259,52 @@ export function SettingsPage() {
                         <FormControl>
                           <Input {...field} placeholder="Your name" />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="bg-muted/50 dark:bg-secondary/30 border-border/50 rounded-lg border p-4">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-indigo-600" />
+                    <h3 className="text-sm font-medium">Regional Settings</h3>
+                  </div>
+
+                  <FormField
+                    control={profileForm.control}
+                    name="preferredCurrency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preferred Currency</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-background w-full md:w-50">
+                              <SelectValue placeholder="Select a currency" />
+                            </SelectTrigger>
+                          </FormControl>
+
+                          <SelectContent
+                            position="popper"
+                            sideOffset={5}
+                            className="max-h-50"
+                          >
+                            {CURRENCIES.map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {currency}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          This currency will be used to calculate and display
+                          your dashboard statistics. It also affects how your
+                          subscription costs are sorted and aggregated.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -275,7 +338,6 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* SECURITY CARD */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -369,7 +431,6 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* DANGER ZONE CARD */}
         <Card className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/10">
           <CardHeader>
             <div className="flex items-center gap-2 text-red-600 dark:text-red-500">

@@ -1,18 +1,24 @@
 import { z } from "zod";
-import { Frequency, Category } from "../types/types";
+import { CURRENCIES } from "@/config/currencies";
 
 export const createSubscriptionSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  price: z.number().min(0.01, "Price must be greater than 0"),
-  currency: z.string().min(1, "Currency is required"),
-  frequency: z.enum(Frequency, { message: "Please select a frequency" }),
-  category: z.enum(Category, { message: "Please select a category" }),
-  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  price: z.coerce.number().positive("Price must be positive"),
+  currency: z.enum(CURRENCIES).default("EUR"),
+  frequency: z.enum(["WEEKLY", "MONTHLY", "YEARLY", "ONCE"]),
+  category: z.enum([
+    "ENTERTAINMENT",
+    "LEARNING",
+    "UTILITIES",
+    "WORK",
+    "HEALTH",
+    "FOOD",
+    "OTHER",
+  ]),
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date",
   }),
-  description: z.string().max(500, "Description is too long").optional(),
+  description: z.string().optional(),
 });
 
-export type CreateSubscriptionFormValues = z.infer<
-  typeof createSubscriptionSchema
->;
+export type SubscriptionFormData = z.infer<typeof createSubscriptionSchema>;

@@ -7,6 +7,7 @@ export const updateMeSchema = z.object({
       .min(1, { message: "Name cannot be empty" })
       .max(100, { message: "Name is too long" })
       .optional(),
+    preferredCurrency: z.string().length(3).optional(),
   }),
 });
 

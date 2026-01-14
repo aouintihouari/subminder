@@ -31,6 +31,7 @@ export interface Subscription {
   isActive: boolean;
   userId: number;
   createdAt: string;
+  convertedPrice?: number;
 }
 
 export interface CreateSubscriptionDTO {

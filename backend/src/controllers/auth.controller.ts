@@ -123,108 +123,83 @@ export const logout = (_: Request, res: Response) => {
   res.status(200).json({ status: "success" });
 };
 
-export const getMe = async (req: Request, res: Response, _: NextFunction) => {
+export const getMe = async (req: Request, res: Response) => {
   res.status(200).json({ status: "success", data: { user: req.user } });
 };
 
-export const forgotPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { email } = forgotPasswordSchema.parse({ body: req.body }).body;
-    const user = await prisma.user.findUnique({ where: { email } });
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = forgotPasswordSchema.parse({ body: req.body }).body;
+  const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      return res.status(200).json({
-        status: "success",
-        message: "If this email exists, a reset link has been sent.",
-      });
-    }
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const passwordResetToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetToken,
-        passwordResetExpires: new Date(
-          Date.now() + PASSWORD_RESET_EXPIRES_IN_MS
-        ),
-      },
+  if (!user)
+    return res.status(200).json({
+      status: "success",
+      message: "If this email exists, a reset link has been sent.",
     });
 
-    try {
-      await emailService.sendPasswordResetEmail(
-        user.email,
-        resetToken,
-        user.name || "User"
-      );
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
 
-      res.status(200).json({
-        status: "success",
-        message: "If this email exists, a reset link has been sent.",
-      });
-    } catch (err) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          passwordResetToken: null,
-          passwordResetExpires: null,
-        },
-      });
-      throw new AppError("Error sending email. Please try again later.", 500);
-    }
-  } catch (error) {
-    next(error);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordResetToken,
+      passwordResetExpires: new Date(Date.now() + PASSWORD_RESET_EXPIRES_IN_MS),
+    },
+  });
+
+  try {
+    await emailService.sendPasswordResetEmail(
+      user.email,
+      resetToken,
+      user.name || "User"
+    );
+    res.status(200).json({
+      status: "success",
+      message: "If this email exists, a reset link has been sent.",
+    });
+  } catch (err) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: null, passwordResetExpires: null },
+    });
+    throw new AppError("Error sending email. Please try again later.", 500);
   }
 };
 
-export const resetPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(req.params.token)
-      .digest("hex");
+export const resetPassword = async (req: Request, res: Response) => {
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
 
-    const user = await prisma.user.findFirst({
-      where: {
-        passwordResetToken: hashedToken,
-        passwordResetExpires: { gt: new Date() },
-      },
-    });
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { gt: new Date() },
+    },
+  });
 
-    if (!user) {
-      throw new AppError("Token is invalid or has expired.", 400);
-    }
+  if (!user) throw new AppError("Token is invalid or has expired.", 400);
 
-    const { password } = resetPasswordSchema.parse({ body: req.body }).body;
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
+  const { password } = resetPasswordSchema.parse({ body: req.body }).body;
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        passwordResetToken: null,
-        passwordResetExpires: null,
-      },
-    });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
 
-    res.status(200).json({
-      status: "success",
-      message: "Password successfully reset! You can now log in.",
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({
+    status: "success",
+    message: "Password successfully reset! You can now log in.",
+  });
 };

@@ -15,6 +15,7 @@ model User {
   password  String
   name      String?
   role      Role     @default(USER)
+  preferredCurrency String   @default("USD")
 
   isVerified            Boolean   @default(false)
   verificationToken     String?   @unique
@@ -69,4 +70,11 @@ enum Category {
   HEALTH
   FOOD
   OTHER
+}
+
+model ExchangeRate {
+  id        Int      @id @default(autoincrement())
+  currency  String   @unique 
+  rate      Float
+  updatedAt DateTime @updatedAt
 }

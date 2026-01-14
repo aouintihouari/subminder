@@ -6,11 +6,20 @@ import { AppError } from "../utils/AppError";
 export class UserService {
   constructor(private db: PrismaClient) {}
 
-  async updateProfile(userId: number, data: { name?: string }) {
+  async updateProfile(
+    userId: number,
+    data: { name?: string; preferredCurrency?: string }
+  ) {
     return await this.db.user.update({
       where: { id: userId },
       data,
-      select: { id: true, name: true, email: true, role: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        preferredCurrency: true,
+      },
     });
   }
 
