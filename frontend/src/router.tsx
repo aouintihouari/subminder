@@ -9,6 +9,7 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { SettingsPage } from "@/features/auth/pages/SettingsPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { VerifyChangeEmailPage } from "@/features/auth/pages/VerifyChangeEmailPage";
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/auth", element: <AuthPage /> },
       { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/verify-change-email", element: <VerifyChangeEmailPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
       { path: "/reset-password/:token", element: <ResetPasswordPage /> },
     ],

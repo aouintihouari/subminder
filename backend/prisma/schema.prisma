@@ -24,6 +24,10 @@ model User {
   passwordResetToken       String?   @unique
   passwordResetExpires     DateTime?
 
+  newEmail           String?
+  emailChangeToken   String?
+  emailChangeExpires DateTime?
+
   subscriptions Subscription[]
 
   createdAt DateTime @default(now())

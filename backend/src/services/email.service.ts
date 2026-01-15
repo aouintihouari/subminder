@@ -16,12 +16,10 @@ class EmailService {
   private layoutPath = path.join(this.templatesPath, "email-layout.ejs");
 
   constructor() {
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.RESEND_API_KEY)
       this.resend = new Resend(process.env.RESEND_API_KEY);
-    } else {
-      // ✅ Log structuré
+    else
       logger.warn("⚠️ RESEND_API_KEY missing. Email Simulation Mode active.");
-    }
   }
 
   private async renderWithLayout(
@@ -35,7 +33,6 @@ class EmailService {
 
   private async send(options: EmailOptions): Promise<void> {
     if (!this.resend) {
-      // ✅ Info utile en dev
       logger.info(
         `📨 [SIMULATION] Sending "${options.subject}" to ${options.email}`
       );
@@ -56,7 +53,6 @@ class EmailService {
       });
 
       if (data.error) {
-        // ✅ Log erreur structuré
         logger.error(data.error, "🔥 Resend API Error");
         throw new Error(data.error.message);
       }
@@ -74,9 +70,8 @@ class EmailService {
     token: string
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-    if (!this.resend) {
+    if (!this.resend)
       logger.info({ verificationUrl }, "🔗 Manual Verification Link");
-    }
 
     await this.send({
       email,
@@ -112,15 +107,31 @@ class EmailService {
     name: string
   ): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    if (!this.resend) {
+    if (!this.resend)
       logger.info({ resetUrl }, "🔐 Reset Password Link (Simulated)");
-    }
 
     await this.send({
       email,
       subject: "Reset your password (Valid for 10 min)",
       templateName: "reset-password-email",
       data: { name, url: resetUrl, validity: "10 minutes" },
+    });
+  }
+
+  async sendEmailChangeVerification(
+    email: string,
+    name: string,
+    token: string
+  ): Promise<void> {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-change-email?token=${token}`;
+    if (!this.resend)
+      logger.info({ verificationUrl }, "📧 [SIMULATION] Change Email Link");
+
+    await this.send({
+      email,
+      subject: "Verify your new email address",
+      templateName: "change-email",
+      data: { name, url: verificationUrl },
     });
   }
 }

@@ -94,7 +94,6 @@ export function ResetPasswordPage() {
 
   return (
     <div className="bg-background flex min-h-screen flex-col items-center justify-center px-4 py-6 font-sans transition-colors duration-300">
-      {/* Header Logo & Title (inchangé) */}
       <div className="animate-in slide-in-from-top-4 fade-in mb-6 space-y-2 text-center duration-700">
         <div className="flex justify-center">
           <div className="dark:bg-primary text-primary-foreground dark:shadow-primary/20 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg shadow-indigo-600/20 transition-transform duration-300 hover:scale-105">

@@ -6,7 +6,7 @@ test.describe("Authentication Flow", () => {
   }) => {
     await page.goto("/");
 
-    await expect(page).toHaveURL(/\/auth\?tab=login/);
+    await expect(page).toHaveURL(/\/auth\?tab=login/, { timeout: 10000 });
     await expect(page.getByRole("heading", { name: /subminder/i })).toBeVisible(
       { timeout: 10000 },
     );

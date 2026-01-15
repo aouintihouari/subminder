@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   useForm,
   type ControllerRenderProps,
@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
   Coins,
+  Mail,
 } from "lucide-react";
 import { AxiosError } from "axios";
 
@@ -34,7 +35,7 @@ import { CURRENCIES } from "@/config/currencies";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
   Form,
   FormControl,
@@ -78,6 +79,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+import { type UpdateProfileDTO } from "../types/types";
+
+// --- Sub-components ---
+
 type PasswordInputProps<T extends FieldValues> = {
   field: ControllerRenderProps<T, Path<T>>;
   placeholder?: string;
@@ -104,19 +109,21 @@ const PasswordInput = <T extends FieldValues>({
         type="button"
         variant="ghost"
         size="sm"
-        className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
+        className="text-muted-foreground absolute top-0 right-0 h-full px-3 hover:bg-transparent"
         onClick={() => setShowPassword((v) => !v)}
         tabIndex={-1}
       >
         {showPassword ? (
-          <EyeOff className="text-muted-foreground h-4 w-4" />
+          <EyeOff className="h-4 w-4" />
         ) : (
-          <Eye className="text-muted-foreground h-4 w-4" />
+          <Eye className="h-4 w-4" />
         )}
       </Button>
     </div>
   );
 };
+
+// --- Main Page Component ---
 
 export function SettingsPage() {
   const { login, logout } = useAuth();
@@ -124,21 +131,59 @@ export function SettingsPage() {
 
   const { data: user } = useUser();
 
+  const profileForm = useForm<UpdateProfileValues>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: { name: "", email: "", preferredCurrency: "USD" },
+
+    values: user
+      ? {
+          name: user.name ?? "",
+          email: user.email ?? "",
+          preferredCurrency: user.preferredCurrency ?? "USD",
+        }
+      : undefined,
+  });
+
+  const passwordForm = useForm<UpdatePasswordValues>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      passwordConfirm: "",
+    },
+  });
+
   const updateProfileMutation = useMutation({
-    mutationFn: (data: UpdateProfileValues) => authService.updateProfile(data),
+    mutationFn: (data: UpdateProfileDTO) => authService.updateProfile(data),
     onSuccess: (response) => {
       toast.success("Profile updated successfully");
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY });
+
       if (response.data?.user && user)
         login({ ...user, ...response.data.user });
 
       profileForm.reset({
         name: response.data?.user?.name ?? "",
+        email: user?.email ?? "",
         preferredCurrency: response.data?.user?.preferredCurrency ?? "USD",
       });
     },
     onError: () => {
       toast.error("Failed to update profile");
+    },
+  });
+
+  const requestEmailChangeMutation = useMutation({
+    mutationFn: (newEmail: string) => authService.requestEmailChange(newEmail),
+    onSuccess: () => {
+      toast.info("Verification link sent. Please check your new inbox.");
+    },
+    onError: (error) => {
+      let msg = "Failed to initiate email change";
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        msg = error.response.data.message;
+      }
+      toast.error(msg);
     },
   });
 
@@ -170,31 +215,23 @@ export function SettingsPage() {
     },
   });
 
-  const profileForm = useForm<UpdateProfileValues>({
-    resolver: zodResolver(updateProfileSchema),
-    defaultValues: {
-      name: "",
-      preferredCurrency: "USD",
-    },
-  });
+  // --- Handlers ---
 
-  useEffect(() => {
-    if (user) {
-      profileForm.reset({
-        name: user.name ?? "",
-        preferredCurrency: user.preferredCurrency ?? "USD",
+  const onProfileSubmit = (data: UpdateProfileValues) => {
+    const { dirtyFields } = profileForm.formState;
+
+    if (dirtyFields.email && data.email !== user?.email)
+      requestEmailChangeMutation.mutate(data.email);
+
+    if (dirtyFields.name || dirtyFields.preferredCurrency)
+      updateProfileMutation.mutate({
+        name: data.name,
+        preferredCurrency: data.preferredCurrency,
       });
-    }
-  }, [user, profileForm]);
+  };
 
-  const passwordForm = useForm<UpdatePasswordValues>({
-    resolver: zodResolver(updatePasswordSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      passwordConfirm: "",
-    },
-  });
+  const isProfileLoading =
+    updateProfileMutation.isPending || requestEmailChangeMutation.isPending;
 
   return (
     <div className="animate-in fade-in container mx-auto max-w-4xl space-y-8 p-6 duration-500">
@@ -218,6 +255,7 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* --- Profile Card --- */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -232,23 +270,34 @@ export function SettingsPage() {
           <CardContent>
             <Form {...profileForm}>
               <form
-                onSubmit={profileForm.handleSubmit((data) =>
-                  updateProfileMutation.mutate(data),
-                )}
+                onSubmit={profileForm.handleSubmit(onProfileSubmit)}
                 className="space-y-6"
               >
                 <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Email Address</Label>
-                    <div className="relative">
-                      <Input
-                        value={user?.email ?? ""}
-                        disabled
-                        className="bg-muted/50 cursor-not-allowed pr-10"
-                      />
-                      <Lock className="text-muted-foreground absolute top-2.5 right-3 h-4 w-4 opacity-70" />
-                    </div>
-                  </div>
+                  <FormField
+                    control={profileForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...field}
+                              type="email"
+                              placeholder="name@example.com"
+                              className="pr-10"
+                            />
+                            <Mail className="text-muted-foreground absolute top-2.5 right-3 h-4 w-4 opacity-50" />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Changing your email requires verification.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={profileForm.control}
@@ -259,6 +308,9 @@ export function SettingsPage() {
                         <FormControl>
                           <Input {...field} placeholder="Your name" />
                         </FormControl>
+                        <FormDescription>
+                          This is your public display name.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -278,8 +330,8 @@ export function SettingsPage() {
                       <FormItem>
                         <FormLabel>Preferred Currency</FormLabel>
                         <Select
+                          key={field.value}
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
                           value={field.value}
                         >
                           <FormControl>
@@ -302,8 +354,7 @@ export function SettingsPage() {
                         </Select>
                         <FormDescription className="text-xs">
                           This currency will be used to calculate and display
-                          your dashboard statistics. It also affects how your
-                          subscription costs are sorted and aggregated.
+                          your dashboard statistics.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -315,12 +366,11 @@ export function SettingsPage() {
                   <Button
                     type="submit"
                     disabled={
-                      updateProfileMutation.isPending ||
-                      !profileForm.formState.isDirty
+                      isProfileLoading || !profileForm.formState.isDirty
                     }
                     className="cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700"
                   >
-                    {updateProfileMutation.isPending ? (
+                    {isProfileLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Saving...
@@ -338,6 +388,7 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* --- Security Card --- */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -431,6 +482,7 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* --- Danger Zone Card --- */}
         <Card className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/10">
           <CardHeader>
             <div className="flex items-center gap-2 text-red-600 dark:text-red-500">

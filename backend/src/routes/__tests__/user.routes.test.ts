@@ -182,4 +182,110 @@ describe("User Routes (Profile Management)", () => {
       expect(response.body.status).toBe("error");
     });
   });
+
+  describe("Email Change Flow", () => {
+    describe("POST /api/v1/users/request-email-change", () => {
+      it("should initiate email change successfully", async () => {
+        prismaMock.user.findUnique.mockImplementation(((args: any) => {
+          if (args.where.id === mockUser.id) {
+            return Promise.resolve(mockUser as any);
+          }
+          if (args.where.email === "new@example.com") {
+            return Promise.resolve(null);
+          }
+          return Promise.resolve(null);
+        }) as any);
+
+        prismaMock.user.update.mockResolvedValue({
+          ...mockUser,
+          newEmail: "new@example.com",
+          emailChangeToken: "hashedToken123",
+        } as any);
+
+        const response = await request(app)
+          .post("/api/v1/users/request-email-change")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ newEmail: "new@example.com" });
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toMatch(/verification link sent/i);
+
+        expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { email: "new@example.com" },
+          })
+        );
+      });
+
+      it("should fail if new email is already taken", async () => {
+        prismaMock.user.findUnique.mockImplementation(((args: any) => {
+          if (args.where.id === mockUser.id)
+            return Promise.resolve(mockUser as any);
+          if (args.where.email === "taken@example.com") {
+            return Promise.resolve({
+              id: 99,
+              email: "taken@example.com",
+            } as any);
+          }
+          return Promise.resolve(null);
+        }) as any);
+
+        const response = await request(app)
+          .post("/api/v1/users/request-email-change")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ newEmail: "taken@example.com" });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(/already in use/i);
+      });
+
+      it("should fail if new email is invalid", async () => {
+        const response = await request(app)
+          .post("/api/v1/users/request-email-change")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ newEmail: "not-an-email" });
+
+        expect(response.status).toBe(400);
+      });
+    });
+
+    describe("PATCH /api/v1/users/verify-email-change/:token", () => {
+      const mockToken = "validToken123";
+
+      it("should verify and update email successfully", async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+          ...mockUser,
+          newEmail: "confirmed@example.com",
+          emailChangeExpires: new Date(Date.now() + 10000),
+        } as any);
+
+        prismaMock.user.update.mockResolvedValue({
+          ...mockUser,
+          email: "confirmed@example.com",
+          newEmail: null,
+          emailChangeToken: null,
+        } as any);
+
+        const response = await request(app)
+          .patch(`/api/v1/users/verify-email-change/${mockToken}`)
+          .set("Authorization", `Bearer ${token}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toMatch(/successfully updated/i);
+      });
+
+      it("should fail if token is invalid or expired", async () => {
+        prismaMock.user.findFirst.mockResolvedValue(null);
+
+        const response = await request(app).patch(
+          `/api/v1/users/verify-email-change/invalidToken`
+        );
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(
+          /token is invalid or has expired/i
+        );
+      });
+    });
+  });
 });

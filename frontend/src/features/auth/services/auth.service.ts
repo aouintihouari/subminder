@@ -56,7 +56,6 @@ export const authService = {
     );
     return response.data;
   },
-  // ---------------------------------------
 
   logout: async () => {
     await apiClient.post(API_ROUTES.AUTH.LOGOUT);
@@ -88,5 +87,20 @@ export const authService = {
   deleteAccount: async (): Promise<void> => {
     await apiClient.delete(API_ROUTES.USERS.DELETE_ACCOUNT);
     localStorage.removeItem("user");
+  },
+
+  requestEmailChange: async (newEmail: string): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+      API_ROUTES.USERS.REQUEST_EMAIL_CHANGE,
+      { newEmail },
+    );
+    return response.data;
+  },
+
+  verifyEmailChange: async (token: string): Promise<AuthResponse> => {
+    const response = await apiClient.patch<AuthResponse>(
+      `${API_ROUTES.USERS.VERIFY_EMAIL_CHANGE}/${token}`,
+    );
+    return response.data;
   },
 };

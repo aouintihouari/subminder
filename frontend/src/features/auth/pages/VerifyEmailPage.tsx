@@ -1,9 +1,23 @@
 import { useSearchParams, useNavigate } from "react-router";
-import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 import { AxiosError } from "axios";
 import { useQuery } from "@tanstack/react-query";
 
 import { authService } from "../services/auth.service";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +38,7 @@ export const VerifyEmailPage = () => {
   const renderContent = () => {
     if (!token)
       return {
-        icon: <XCircle className="mx-auto h-12 w-12 text-red-600" />,
+        icon: <XCircle className="text-destructive h-16 w-16" />,
         title: "Invalid Link",
         message: "Missing verification token.",
         status: "error",
@@ -32,11 +46,9 @@ export const VerifyEmailPage = () => {
 
     if (isPending) {
       return {
-        icon: (
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-600" />
-        ),
+        icon: <Loader2 className="h-16 w-16 animate-spin text-indigo-600" />,
         title: "Verifying...",
-        message: "Verifying your email...",
+        message: "Please wait while we verify your email address.",
         status: "loading",
       };
     }
@@ -48,7 +60,7 @@ export const VerifyEmailPage = () => {
       else if (error instanceof Error) message = error.message;
 
       return {
-        icon: <XCircle className="mx-auto h-12 w-12 text-red-600" />,
+        icon: <XCircle className="text-destructive h-16 w-16" />,
         title: "Verification Failed",
         message: message,
         status: "error",
@@ -57,7 +69,7 @@ export const VerifyEmailPage = () => {
 
     if (isSuccess) {
       return {
-        icon: <CheckCircle2 className="mx-auto h-12 w-12 text-green-600" />,
+        icon: <CheckCircle2 className="h-16 w-16 text-green-500" />,
         title: "You're all set!",
         message:
           "Email verified successfully! You can now access your account.",
@@ -73,46 +85,57 @@ export const VerifyEmailPage = () => {
   if (!content) return null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
-        <div className="p-8 text-center">
-          <div className="mb-6 flex justify-center">{content.icon}</div>
+    <div className="bg-background flex min-h-screen flex-col items-center justify-center px-4 py-6 font-sans transition-colors duration-300">
+      <div className="animate-in slide-in-from-top-4 fade-in mb-6 space-y-2 text-center duration-700">
+        <div className="flex justify-center">
+          <div className="dark:bg-primary text-primary-foreground dark:shadow-primary/20 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg shadow-indigo-600/20 transition-transform duration-300 hover:scale-105">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+        </div>
+        <h1 className="text-foreground my-3 text-3xl font-extrabold tracking-tight">
+          Email Verification
+        </h1>
+      </div>
 
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            {content.title}
-          </h1>
-
-          <p className="mb-8 leading-relaxed text-gray-600">
+      <Card className="animate-in fade-in zoom-in-95 slide-in-from-bottom-4 border-border bg-card w-full max-w-md p-4 shadow-xl duration-500 sm:p-6">
+        <CardHeader className="space-y-1 p-0 pb-6 text-center">
+          <CardTitle className="text-2xl font-bold">{content.title}</CardTitle>
+          <CardDescription className="text-base">
             {content.message}
-          </p>
+          </CardDescription>
+        </CardHeader>
 
-          <div className="space-y-3">
+        <CardContent className="flex flex-col items-center gap-6 p-0">
+          <div className="animate-in zoom-in duration-300">{content.icon}</div>
+
+          <div className="w-full pt-2">
             {content.status === "success" && (
-              <button
+              <Button
                 onClick={() => navigate("/auth")}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 font-medium text-white transition-colors hover:bg-gray-800"
+                className="text-primary-foreground shadow-primary/20 dark:bg-primary hover:bg-primary/90 mt-2 h-12 w-full cursor-pointer rounded-xl bg-indigo-600 text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]"
               >
-                Go to Login <ArrowRight className="h-4 w-4" />
-              </button>
+                Go to Login <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             )}
 
             {content.status === "error" && (
-              <button
-                onClick={() => navigate("/auth")}
-                className="cursor-pointer text-sm text-gray-500 underline transition-colors hover:text-gray-900"
+              <Button
+                variant="outline"
+                onClick={() => navigate("/auth?tab=signup")}
+                className="mt-2 h-12 w-full cursor-pointer rounded-xl text-base font-semibold"
               >
                 Back to Sign Up
-              </button>
+              </Button>
+            )}
+
+            {content.status === "loading" && (
+              <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-100">
+                <div className="animate-indeterminate h-full w-1/2 rounded-full bg-indigo-600"></div>
+              </div>
             )}
           </div>
-        </div>
-
-        {content.status === "loading" && (
-          <div className="h-1 w-full bg-blue-100">
-            <div className="animate-progress h-1 w-1/3 bg-blue-600"></div>
-          </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

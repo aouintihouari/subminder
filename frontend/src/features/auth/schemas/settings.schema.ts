@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const updateProfileSchema = z.object({
+  email: z.email({ message: "Please enter a valid email address." }),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   preferredCurrency: z.string().length(3),
 });

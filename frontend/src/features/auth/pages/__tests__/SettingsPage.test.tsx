@@ -17,7 +17,7 @@ const mockUserData = {
 
 vi.mock("../../services/auth.service");
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 vi.mock("@/hooks/useUser", () => ({
@@ -51,7 +51,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("should render user information correctly", async () => {
+  it("should render user information correctly with editable email", async () => {
     renderWithProviders(<SettingsPage />);
 
     expect(
@@ -59,11 +59,11 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
 
     const emailInput = screen.getByDisplayValue("test@example.com");
-    expect(emailInput).toBeDisabled();
+    expect(emailInput).not.toBeDisabled();
     expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
   });
 
-  it("should update profile successfully", async () => {
+  it("should update profile (name only) successfully", async () => {
     const user = userEvent.setup();
     vi.mocked(authService.updateProfile).mockResolvedValue({
       status: "success",
@@ -81,10 +81,33 @@ describe("SettingsPage", () => {
     await user.click(saveBtn);
 
     await waitFor(() => {
-      expect(authService.updateProfile).toHaveBeenCalledWith({
-        name: "Jane Doe",
-        preferredCurrency: "USD",
-      });
+      expect(authService.updateProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Jane Doe" }),
+      );
+      expect(authService.requestEmailChange).not.toHaveBeenCalled();
+    });
+  });
+
+  it("should initiate email change flow when email is modified", async () => {
+    const user = userEvent.setup();
+    vi.mocked(authService.requestEmailChange).mockResolvedValue({
+      status: "success",
+      message: "Verification link sent",
+    });
+
+    renderWithProviders(<SettingsPage />);
+
+    const emailInput = await screen.findByDisplayValue("test@example.com");
+    await user.clear(emailInput);
+    await user.type(emailInput, "new@example.com");
+
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      expect(authService.requestEmailChange).toHaveBeenCalledWith(
+        "new@example.com",
+      );
     });
   });
 

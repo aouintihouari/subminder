@@ -22,5 +22,7 @@ export const API_ROUTES = {
     UPDATE_PROFILE: `${BASE_URL_USERS}/update-me`,
     UPDATE_PASSWORD: `${BASE_URL_USERS}/update-password`,
     DELETE_ACCOUNT: `${BASE_URL_USERS}/delete-me`,
+    REQUEST_EMAIL_CHANGE: "/users/request-email-change",
+    VERIFY_EMAIL_CHANGE: "/users/verify-email-change",
   },
 };

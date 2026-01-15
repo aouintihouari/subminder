@@ -32,5 +32,16 @@ export const updatePasswordSchema = z.object({
     }),
 });
 
+export const requestEmailChangeSchema = z.object({
+  body: z.object({
+    newEmail: z
+      .email({ message: "Invalid email address" })
+      .min(1, { message: "Email is required" }),
+  }),
+});
+
 export type UpdateMeInput = z.infer<typeof updateMeSchema>["body"];
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>["body"];
+export type RequestEmailChangeInput = z.infer<
+  typeof requestEmailChangeSchema
+>["body"];
