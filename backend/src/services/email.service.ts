@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import ejs from "ejs";
 import path from "path";
+import { logger } from "../lib/logger";
 
 interface EmailOptions {
   email: string;
@@ -15,12 +16,12 @@ class EmailService {
   private layoutPath = path.join(this.templatesPath, "email-layout.ejs");
 
   constructor() {
-    if (process.env.RESEND_API_KEY)
+    if (process.env.RESEND_API_KEY) {
       this.resend = new Resend(process.env.RESEND_API_KEY);
-    else
-      console.warn(
-        "⚠️ RESEND_API_KEY is missing. Emails will be logged in console only (Simulation Mode)."
-      );
+    } else {
+      // ✅ Log structuré
+      logger.warn("⚠️ RESEND_API_KEY missing. Email Simulation Mode active.");
+    }
   }
 
   private async renderWithLayout(
@@ -34,8 +35,9 @@ class EmailService {
 
   private async send(options: EmailOptions): Promise<void> {
     if (!this.resend) {
-      console.log(
-        `⚠️ [DEV MODE] Email Simulation: Sending "${options.subject}" to ${options.email}`
+      // ✅ Info utile en dev
+      logger.info(
+        `📨 [SIMULATION] Sending "${options.subject}" to ${options.email}`
       );
       return;
     }
@@ -54,15 +56,14 @@ class EmailService {
       });
 
       if (data.error) {
-        console.error("🔥 Resend API Error:", data.error);
+        // ✅ Log erreur structuré
+        logger.error(data.error, "🔥 Resend API Error");
         throw new Error(data.error.message);
       }
 
-      console.info(
-        `📧 Email sent successfully to ${options.email} (ID: ${data.data?.id})`
-      );
+      logger.info(`📧 Email sent to ${options.email} (ID: ${data.data?.id})`);
     } catch (err) {
-      console.error("🔥 Error sending email:", err);
+      logger.error(err, "🔥 Error sending email");
       if (process.env.NODE_ENV === "production_strict") throw err;
     }
   }
@@ -73,8 +74,9 @@ class EmailService {
     token: string
   ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-    if (!this.resend)
-      console.log("🔗 Manual Verification Link:", verificationUrl);
+    if (!this.resend) {
+      logger.info({ verificationUrl }, "🔗 Manual Verification Link");
+    }
 
     await this.send({
       email,
@@ -92,7 +94,7 @@ class EmailService {
     currency: string
   ): Promise<void> {
     if (!email || !subscriptionName || !renewalDate) {
-      console.error("❌ Invalid parameters for reminder email. Aborting.");
+      logger.error("❌ Invalid parameters for reminder email. Aborting.");
       return;
     }
 
@@ -110,8 +112,9 @@ class EmailService {
     name: string
   ): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    if (!this.resend)
-      console.log("🔐 Reset Password Link (Simulated):", resetUrl);
+    if (!this.resend) {
+      logger.info({ resetUrl }, "🔐 Reset Password Link (Simulated)");
+    }
 
     await this.send({
       email,

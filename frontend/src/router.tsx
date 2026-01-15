@@ -13,40 +13,17 @@ import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 export const router = createBrowserRouter([
   {
     element: <ProtectedLayout />,
-    children: [
-      {
-        path: "/",
-        element: <DashboardPage />,
-      },
-    ],
+    children: [{ path: "/", element: <DashboardPage /> }],
   },
   {
     element: <PublicLayout />,
     children: [
-      {
-        path: "/auth",
-        element: <AuthPage />,
-      },
-      {
-        path: "/verify-email",
-        element: <VerifyEmailPage />,
-      },
-      {
-        path: "/forgot-password",
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: "/reset-password/:token",
-        element: <ResetPasswordPage />,
-      },
+      { path: "/auth", element: <AuthPage /> },
+      { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password/:token", element: <ResetPasswordPage /> },
     ],
   },
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
-  },
-  {
-    path: "/settings",
-    element: <SettingsPage />,
-  },
+  { path: "*", element: <Navigate to="/" replace /> },
+  { path: "/settings", element: <SettingsPage /> },
 ]);

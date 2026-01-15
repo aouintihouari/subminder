@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -16,6 +16,7 @@ import {
   EMAIL_VERIFICATION_EXPIRES_IN_MS,
   PASSWORD_RESET_EXPIRES_IN_MS,
 } from "../config/constants";
+import { logger } from "../lib/logger";
 
 const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
   const token = signToken(user.id);
@@ -162,10 +163,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
       message: "If this email exists, a reset link has been sent.",
     });
   } catch (err) {
+    logger.error(err, "❌ Failed to send password reset email");
+
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordResetToken: null, passwordResetExpires: null },
     });
+
     throw new AppError("Error sending email. Please try again later.", 500);
   }
 };

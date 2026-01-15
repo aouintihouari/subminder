@@ -12,7 +12,16 @@ jest.mock("resend", () => {
   };
 });
 
+jest.mock("../../lib/logger", () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
 import { emailService } from "../email.service";
+import { logger } from "../../lib/logger";
 
 describe("EmailService", () => {
   beforeEach(() => {
@@ -42,22 +51,17 @@ describe("EmailService", () => {
       error: { message: "API Key invalid", name: "invalid_api_key" },
     });
 
-    const consoleSpy = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
+    // WHEN
     await emailService.sendVerificationEmail(
       "fail@test.com",
       "Fail User",
       "token"
     );
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "🔥 Resend API Error:",
-      expect.objectContaining({ message: "API Key invalid" })
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "API Key invalid" }),
+      "🔥 Resend API Error"
     );
-
-    consoleSpy.mockRestore();
   });
 
   it("should send a password reset email with correct link", async () => {
@@ -101,10 +105,6 @@ describe("EmailService", () => {
   });
 
   it("should not send email if required parameters are missing", async () => {
-    const consoleSpy = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
     await emailService.sendReminderEmail(
       "",
       "Netflix",
@@ -113,11 +113,13 @@ describe("EmailService", () => {
       "USD"
     );
 
+    // THEN
     expect(mockSend).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(
+
+    // ✅ Vérification sur le logger
+    // Signature : logger.error("❌ Invalid parameters for reminder email. Aborting.");
+    expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining("Invalid parameters")
     );
-
-    consoleSpy.mockRestore();
   });
 });

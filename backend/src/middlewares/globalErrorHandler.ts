@@ -1,13 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import * as Sentry from "@sentry/node";
 
 import { AppError } from "../utils/AppError";
+import { logger } from "../lib/logger";
 
 const globalErrorHandler = (
   err: any,
-  _: Request,
+  req: Request,
   res: Response,
-  next: NextFunction
+  _: NextFunction
 ) => {
   let statusCode = err.statusCode || 500;
   let status = err.status || "error";
@@ -41,22 +43,30 @@ const globalErrorHandler = (
     message = err.message;
   }
 
-  if (process.env.NODE_ENV === "development") {
-    res
-      .status(statusCode)
-      .json({ status, message, errors, stack: err.stack, error: err });
-  } else {
+  const logContext = `[${req.method} ${req.originalUrl}]`;
+
+  if (statusCode === 500) {
+    Sentry.captureException(err);
+    logger.error(err, `💥 ${logContext} Server Error`);
+  } else logger.warn(`${logContext} ${message} (Status: ${statusCode})`);
+
+  if (process.env.NODE_ENV === "development")
+    res.status(statusCode).json({
+      status,
+      message,
+      errors,
+      stack: err.stack,
+      error: err,
+    });
+  else {
     if (statusCode !== 500)
       res
         .status(statusCode)
         .json({ status, message, ...(errors && { errors }) });
-    else {
-      console.error("ERROR 💥", err);
-
+    else
       res
         .status(500)
         .json({ status: "error", message: "Something went wrong!" });
-    }
   }
 };
 

@@ -2,6 +2,7 @@ import axios from "axios";
 import { prisma } from "../lib/prisma";
 import redis from "../lib/redis";
 import { AppError } from "../utils/AppError";
+import { logger } from "../lib/logger";
 
 const CACHE_TTL = 60 * 60 * 24;
 const CACHE_KEY = "exchange_rates";
@@ -30,33 +31,38 @@ export const exchangeRateService = {
 
       return await exchangeRateService.updateRates();
     } catch (error) {
-      console.error("⚠️ Error fetching rates:", error);
+      logger.error(error, "⚠️ Error fetching exchange rates");
       throw new AppError("Unable to retrieve exchange rates", 503);
     }
   },
 
   updateRates: async (): Promise<Record<string, number>> => {
-    console.log("🔄 Fetching new exchange rates from external API...");
+    try {
+      logger.info("🔄 Fetching new exchange rates from external API...");
 
-    const response = await axios.get<{ rates: Record<string, number> }>(
-      "https://api.frankfurter.app/latest?from=USD"
-    );
-    const rates = response.data.rates;
+      const response = await axios.get<{ rates: Record<string, number> }>(
+        "https://api.frankfurter.app/latest?from=USD"
+      );
 
-    rates["USD"] = 1;
+      const rates = response.data.rates;
+      rates["USD"] = 1;
 
-    const operations = Object.entries(rates).map(([currency, rate]) =>
-      prisma.exchangeRate.upsert({
-        where: { currency },
-        update: { rate: rate },
-        create: { currency, rate: rate },
-      })
-    );
-    await prisma.$transaction(operations);
+      const operations = Object.entries(rates).map(([currency, rate]) =>
+        prisma.exchangeRate.upsert({
+          where: { currency },
+          update: { rate },
+          create: { currency, rate },
+        })
+      );
 
-    await redis.set(CACHE_KEY, JSON.stringify(rates), "EX", CACHE_TTL);
+      await prisma.$transaction(operations);
+      await redis.set(CACHE_KEY, JSON.stringify(rates), "EX", CACHE_TTL);
 
-    console.log("✅ Exchange rates updated successfully");
-    return rates;
+      logger.info("✅ Exchange rates updated successfully");
+      return rates;
+    } catch (error) {
+      logger.error(error, "❌ Failed to update exchange rates from API");
+      throw new AppError("Failed to update exchange rates", 502);
+    }
   },
 };

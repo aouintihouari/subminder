@@ -1,24 +1,45 @@
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 
+import "dotenv/config";
+import { initSentry } from "./config/sentry";
+
+initSentry();
+
+import app from "./app";
+import { logger } from "./lib/logger";
+import { initCronJobs } from "./services/cron.service";
+import { exchangeRateService } from "./services/exchangeRate.service";
+
 process.on("uncaughtException", (err: Error) => {
-  console.log("UNCAUGHT EXCEPTION! 💥 Shutting down...");
-  console.log(err.name, err.message);
+  logger.fatal(err, "UNCAUGHT EXCEPTION! 💥 Shutting down...");
   process.exit(1);
 });
-
-import "dotenv/config";
-import app from "./app";
 
 const PORT = Number(process.env.PORT) || 8000;
 const HOST = process.env.HOST || "0.0.0.0";
 
-const server = app.listen(PORT, HOST, () =>
-  console.log(`\n🚀 SubMinder Backend running on port ${PORT} and host ${HOST}`)
-);
+const server = app.listen(PORT, HOST, () => {
+  logger.info(`🚀 SubMinder Backend running on port ${PORT} and host ${HOST}`);
+  initCronJobs();
+  exchangeRateService
+    .getRates()
+    .then(() => logger.info("💰 Initial exchange rates loaded"))
+    .catch((err) => logger.error(err, "⚠️ Failed to load initial rates"));
+});
 
 process.on("unhandledRejection", (err: Error) => {
-  console.log("UNHANDLED REJECTION! 💥 Shutting down...");
-  console.log(err);
+  logger.error(err, "UNHANDLED REJECTION! 💥 Shutting down...");
   server.close(() => process.exit(1));
 });
+
+const shutdown = () => {
+  logger.info("SIGTERM/SIGINT received. Shutting down gracefully...");
+  server.close(() => {
+    logger.info("Process terminated.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

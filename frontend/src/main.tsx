@@ -5,6 +5,9 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import "./index.css";
 import { queryClient } from "@/lib/react-query";
+import { initSentry } from "@/lib/sentry";
+
+initSentry();
 
 import App from "./App.tsx";
 
