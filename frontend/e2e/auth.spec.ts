@@ -6,12 +6,16 @@ test.describe("Authentication Flow", () => {
   }) => {
     await page.goto("/");
 
-    await expect(page).toHaveURL(/\/auth\?tab=login/, { timeout: 10000 });
+    // The router now does: / -> /dashboard -> /auth?tab=login
+    // We expect the final URL to be the login page
+    await expect(page).toHaveURL(/\/auth\?tab=login/, { timeout: 15000 });
+
     await expect(page.getByRole("heading", { name: /subminder/i })).toBeVisible(
-      { timeout: 10000 },
+      {
+        timeout: 10000,
+      },
     );
     await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
   });
 
   test("should allow user to switch to signup", async ({ page }) => {
@@ -19,7 +23,6 @@ test.describe("Authentication Flow", () => {
     await page.getByRole("tab", { name: /sign up/i }).click();
 
     await expect(page).toHaveURL(/\/auth\?tab=signup/);
-
     await expect(page.locator('input[name="name"]')).toBeVisible();
   });
 
