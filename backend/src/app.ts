@@ -8,13 +8,13 @@ import rateLimit from "express-rate-limit";
 import { pinoHttp } from "pino-http";
 import * as Sentry from "@sentry/node";
 
-import authRoutes from "./routes/auth.routes";
-import subscriptionRoutes from "./routes/subscription.routes";
-import userRoutes from "./routes/user.routes";
+import authRoutes from "./modules/auth/auth.route";
+import subscriptionRoutes from "./modules/subscriptions/subscription.route";
+import userRoutes from "./modules/users/user.route";
 
-import globalErrorHandler from "./middlewares/globalErrorHandler";
-import { AppError } from "./utils/AppError";
-import { logger } from "./lib/logger";
+import globalErrorHandler from "./modules/shared/middlewares/globalErrorHandler";
+import { AppError } from "./modules/shared/utils/AppError";
+import { logger } from "./modules/shared/lib/logger";
 
 const app: Application = express();
 

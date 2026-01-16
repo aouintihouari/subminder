@@ -2,14 +2,14 @@ import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 
 import "dotenv/config";
-import { initSentry } from "./config/sentry";
+import { initSentry } from "./modules/shared/config/sentry";
 
 initSentry();
 
 import app from "./app";
-import { logger } from "./lib/logger";
-import { initCronJobs } from "./services/cron.service";
-import { exchangeRateService } from "./services/exchangeRate.service";
+import { logger } from "./modules/shared/lib/logger";
+import { initCronJobs } from "./modules/shared/services/cron.service";
+import { exchangeRateService } from "./modules/shared/services/exchangeRate.service";
 
 process.on("uncaughtException", (err: Error) => {
   logger.fatal(err, "UNCAUGHT EXCEPTION! 💥 Shutting down...");
