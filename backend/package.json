@@ -6,7 +6,7 @@
   "scripts": {
     "start": "NODE_ENV=production node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc && copyfiles -u 1 src/**/*.ejs dist/",
+    "build": "tsc && copyfiles -u 1 \"src/**/*.ejs\" dist/",
     "lint": "eslint src/**/*.ts",
     "test": "jest",
     "test:watch": "jest --watch"

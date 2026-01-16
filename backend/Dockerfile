@@ -29,7 +29,7 @@ RUN npm ci --only=production && \
     npx prisma generate
 
 COPY --from=builder /app/dist ./dist
-COPY src/templates ./dist/templates
+COPY src/modules/shared/templates ./dist/modules/shared/templates
 
 USER node
 
