@@ -12,13 +12,7 @@ jest.mock("resend", () => {
   };
 });
 
-jest.mock("../../lib/logger", () => ({
-  logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-  },
-}));
+jest.mock("../../lib/logger");
 
 import { emailService } from "../email.service";
 import { logger } from "../../../shared/lib/logger";
@@ -51,7 +45,6 @@ describe("EmailService", () => {
       error: { message: "API Key invalid", name: "invalid_api_key" },
     });
 
-    // WHEN
     await emailService.sendVerificationEmail(
       "fail@test.com",
       "Fail User",
@@ -113,11 +106,8 @@ describe("EmailService", () => {
       "USD"
     );
 
-    // THEN
     expect(mockSend).not.toHaveBeenCalled();
 
-    // ✅ Vérification sur le logger
-    // Signature : logger.error("❌ Invalid parameters for reminder email. Aborting.");
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining("Invalid parameters")
     );

@@ -11,6 +11,8 @@ import * as Sentry from "@sentry/node";
 import authRoutes from "./modules/auth/auth.route";
 import subscriptionRoutes from "./modules/subscriptions/subscription.route";
 import userRoutes from "./modules/users/user.route";
+import categoryRoutes from "./modules/categories/category.route";
+import expenseRoutes from "./modules/expenses/expense.route";
 
 import globalErrorHandler from "./modules/shared/middlewares/globalErrorHandler";
 import { AppError } from "./modules/shared/utils/AppError";
@@ -39,6 +41,8 @@ app.use(cookieParser() as any);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/subscriptions", subscriptionRoutes);
+app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/expenses", expenseRoutes);
 
 app.get("/", (_: Request, res: Response) => {
   res.status(200).json({

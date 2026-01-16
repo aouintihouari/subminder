@@ -24,6 +24,27 @@ const addInterval = (
   return newDate;
 };
 
+export const getNextPaymentDate = (
+  startDate: Date,
+  frequency: Frequency
+): Date | null => {
+  if (frequency === "ONCE") return null;
+
+  const now = new Date();
+  now.setUTCHours(0, 0, 0, 0);
+
+  let nextDate = new Date(startDate);
+  nextDate.setUTCHours(0, 0, 0, 0);
+
+  if (nextDate >= now) return nextDate;
+
+  while (nextDate < now) {
+    nextDate = addInterval(nextDate, frequency, 1);
+  }
+
+  return nextDate;
+};
+
 export const isRenewalDue = (
   startDate: Date,
   frequency: Frequency,

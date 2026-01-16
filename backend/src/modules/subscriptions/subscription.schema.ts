@@ -1,16 +1,15 @@
 import { z } from "zod";
-import { Frequency, Category } from "@prisma/client";
+import { Frequency } from "@prisma/client";
 
 const subscriptionBodySchema = z.object({
   name: z.string().min(1, { message: "Name is required" }).max(100),
   price: z.number().min(0, { message: "Price must be positive" }),
   currency: z.string().length(3).default("EUR"),
-  frequency: z.enum(Frequency, {
-    message: "Invalid frequency (WEEKLY, MONTHLY, YEARLY, ONCE)",
-  }),
-  category: z.enum(Category, {
-    message: "Invalid category",
-  }),
+  frequency: z.nativeEnum(Frequency),
+  categoryId: z
+    .number()
+    .int()
+    .positive({ message: "Valid Category ID is required" }),
   startDate: z.iso.datetime({ offset: true }).or(z.string().date()),
   isActive: z.boolean().optional().default(true),
   description: z.string().max(500, "Description too long").optional(),

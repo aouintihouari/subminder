@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log("🌱 Starting E2E seeding...");
+
   const email = "test@example.com";
   const password = "password123";
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -16,10 +18,11 @@ async function main() {
       password: hashedPassword,
       name: "Test User",
       isVerified: true,
+      preferredCurrency: "EUR",
+      role: "USER",
     },
   });
-
-  console.log({ user });
+  console.log(`✅ Created E2E User: ${user.email}`);
 }
 
 main()

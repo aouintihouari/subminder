@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -7,51 +7,6 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(USER)
-  preferredCurrency String   @default("USD")
-
-  isVerified            Boolean   @default(false)
-  verificationToken     String?   @unique
-  verificationTokenExpiresAt DateTime?
-
-  passwordResetToken       String?   @unique
-  passwordResetExpires     DateTime?
-
-  newEmail           String?
-  emailChangeToken   String?
-  emailChangeExpires DateTime?
-
-  subscriptions Subscription[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Subscription {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Float
-  currency  String   @default("EUR")
-  frequency Frequency
-
-  category  Category  @default(OTHER)
-  description String?
-
-  startDate DateTime
-  isActive  Boolean @default(true)
-
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
 }
 
 enum Role {
@@ -66,19 +21,102 @@ enum Frequency {
   ONCE
 }
 
-enum Category {
-  ENTERTAINMENT
-  LEARNING
-  UTILITIES
-  WORK
-  HEALTH
-  FOOD
-  OTHER
+enum CategoryType {
+  EXPENSE
+  INCOME
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  password          String
+  name              String?
+  role              Role     @default(USER)
+  preferredCurrency String   @default("USD")
+
+  isVerified                 Boolean   @default(false)
+  verificationToken          String?   @unique
+  verificationTokenExpiresAt DateTime?
+
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
+
+  newEmail           String?
+  emailChangeToken   String?
+  emailChangeExpires DateTime?
+
+  subscriptions    Subscription[]
+  expenses         Expense[]
+  customCategories Category[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id       Int          @id @default(autoincrement())
+  name     String
+  slug     String
+  icon     String
+  color    String
+  isSystem Boolean      @default(false)
+  isDigital Boolean     @default(false)
+  type     CategoryType @default(EXPENSE)
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptions Subscription[]
+  expenses      Expense[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
+  @@unique([slug, userId])
+}
+
+model Subscription {
+  id        Int       @id @default(autoincrement())
+  name      String
+  price     Float
+  currency  String    @default("EUR")
+  frequency Frequency
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  description String?
+  startDate   DateTime
+  isActive    Boolean  @default(true)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  currency    String   @default("EUR")
+  date        DateTime @default(now())
+  description String?
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ExchangeRate {
   id        Int      @id @default(autoincrement())
-  currency  String   @unique 
+  currency  String   @unique
   rate      Float
   updatedAt DateTime @updatedAt
 }
