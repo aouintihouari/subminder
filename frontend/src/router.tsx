@@ -5,16 +5,23 @@ import { PublicLayout } from "@/layouts/PublicLayout";
 
 import { AuthPage } from "@/features/auth/pages/AuthPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
-import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
-import { SettingsPage } from "@/features/auth/pages/SettingsPage";
+import { VerifyChangeEmailPage } from "@/features/auth/pages/VerifyChangeEmailPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
-import { VerifyChangeEmailPage } from "@/features/auth/pages/VerifyChangeEmailPage";
+import { SettingsPage } from "@/features/auth/pages/SettingsPage";
+
+import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { SubscriptionsPage } from "@/features/subscriptions/pages/SubscriptionsPage";
 
 export const router = createBrowserRouter([
   {
     element: <ProtectedLayout />,
-    children: [{ path: "/", element: <DashboardPage /> }],
+    children: [
+      { path: "/", element: <Navigate to="/dashboard" replace /> },
+      { path: "/dashboard", element: <DashboardPage /> },
+      { path: "/subscriptions", element: <SubscriptionsPage /> },
+      { path: "/settings", element: <SettingsPage /> },
+    ],
   },
   {
     element: <PublicLayout />,
@@ -27,5 +34,4 @@ export const router = createBrowserRouter([
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
-  { path: "/settings", element: <SettingsPage /> },
 ]);
